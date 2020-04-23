@@ -1,0 +1,188 @@
+//********************************************
+const title = "Basic Layout"
+// made by Lieman at 2020.04.22
+//
+// short description:
+// basic layout
+//********************************************
+
+
+
+
+
+// index
+
+// user edit data
+// declaration
+// constant and variable
+
+// main function
+
+// extension
+
+
+
+
+
+// user edit data
+
+
+
+
+
+// declaration
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+
+class Program {
+    // 더 구분해주자
+    constructor(title) {
+        // constant and variable
+        this.cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+        this.title = title
+
+        this.buttonDataArray = [
+            ["functionName0", "buttonName0"],
+            ["functionName1", "buttonName1"],
+            ["functionName2", "buttonName2"],
+        ]
+
+        const windowSpace = 15
+
+        const windowTopMargin = 0
+        const windowLeftMargin =  5
+        const windowRightMargin = 5
+        const windowBottomMargin = 10
+
+        const buttonWidth = 140
+        const buttonHeight = 20
+
+        const buttonNumber = this.buttonDataArray.length
+
+        this.buttonArray = []
+
+        // calculate window size
+        const windowWidth = windowLeftMargin + buttonWidth + windowRightMargin
+        const windowHeight = windowTopMargin + (buttonHeight * buttonNumber + windowSpace * (buttonNumber - 1)) + windowBottomMargin
+
+        // make window
+        this.window = PBotUtils.PBotWindow(this.title, windowHeight, windowWidth, ScriptID)
+
+        // make button
+        for(let index = 0; index < buttonNumber; index++) {
+            const functionName = this.buttonDataArray[index][0]
+            const text = this.buttonDataArray[index][1]
+            const xCoordinate = windowLeftMargin
+            const yCoordinate = windowTopMargin + (buttonHeight + windowSpace) * index
+
+            this.buttonArray.push(this.window.addButton(this.buttonDataArray[index][0],
+                                                        text,
+                                                        buttonWidth,
+                                                        xCoordinate,
+                                                        yCoordinate))
+        }
+    }
+
+    printStartMessage() {
+        print(this.cuttingLine)
+        print("[" + this.title + " 시작!]")
+    }
+
+    terminateWithStatusMessage() {
+        this.printTerminationMessage()
+        this.window.closeWindow()
+    }
+
+    // small chunk
+    printTerminationMessage() {
+        print(this.statusMessage)
+        print("[" + this.title + " 종료!]")
+    }
+
+    stataic get State() {
+        return {
+            windowClosed: "창이 닫혀 프로그램을 종료합니다!"
+            finishedSuccessfully: "맡은 일을 다 끝냈어요!",
+        }
+    }
+}
+
+
+
+
+
+// constant and variable
+const windowClosedMessage = "창을 닫아서 매크로를 종료합니다!"
+
+
+
+
+
+// main function
+viewController()
+
+function viewController() {
+    let program = new Program(title)
+    program.printBootUpMessage()
+}
+
+function functionName0() {
+    print("button0 pressed")
+    main()
+}
+
+function functionName1() {
+    print("button1 pressed")
+    main()
+}
+
+function functionName2() {
+    print("button2 pressed")
+    main()
+}
+
+function main() {
+    mainProcess()
+}
+
+function mainProcess() {
+    mainLoop()
+}
+
+function mainLoop() {
+    while() {
+        // implement body
+    }
+}
+
+
+
+
+
+// extension
+class Character {
+    static get inventory() {
+        return PBotUtils.playerInventory()
+    }
+}
+
+class Inventory {
+    constructor(inventory) {
+        this.self = inventory
+    }
+    itemCount(string) {
+        this.self.getInventoryContents()
+    }
+}
+
+function print(thing) {
+    PBotUtils.sysMsg(String(thing))
+}
+
+function numberOfTargetItemInInventory(partOfItemResourceName) {
+		const allItemInInventory = javaListToArray(PBotUtils.playerInventory().getInventoryContents())
+		const targetItemsInInventory = allItemInInventory.filter(item => item.getResname().includes(partOfItemResourceName))
+		const amountOfTargetItemInInventory = targetItemsInInventory.length
+
+		return amountOfTargetItemInInventory
+}

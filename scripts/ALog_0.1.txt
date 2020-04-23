@@ -1,0 +1,185 @@
+//********************************************
+const title = "ALog_0.1"
+// made by Lieman at 2020.04.23
+//
+// short description:
+// 로그를 블럭, 보드로 가공
+//********************************************
+
+
+
+
+
+// index
+
+// declaration
+// main function
+// extension
+
+
+
+
+
+// declaration
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+
+class Program {
+    constructor(title) {
+        // constant and variable
+        this.cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+        this.title = title
+
+        this.buttonDataArray = [
+            ["functionName0", "buttonName0"],
+            ["functionName1", "buttonName1"],
+            ["functionName2", "buttonName2"],
+        ]
+
+        const windowSpace = 15
+
+        const windowTopMargin = 0
+        const windowLeftMargin =  5
+        const windowRightMargin = 5
+        const windowBottomMargin = 10
+
+        const buttonWidth = 140
+        const buttonHeight = 20
+
+        const buttonNumber = this.buttonDataArray.length
+
+        this.buttonArray = []
+
+        // calculate window size
+        const windowWidth = windowLeftMargin + buttonWidth + windowRightMargin
+        const windowHeight = windowTopMargin + (buttonHeight * buttonNumber + windowSpace * (buttonNumber - 1)) + windowBottomMargin
+
+        // make window
+        this.window = PBotUtils.PBotWindow(this.title, windowHeight, windowWidth, ScriptID)
+
+        // make button
+        for(let index = 0; index < buttonNumber; index++) {
+            const functionName = this.buttonDataArray[index][0]
+            const text = this.buttonDataArray[index][1]
+            const xCoordinate = windowLeftMargin
+            const yCoordinate = windowTopMargin + (buttonHeight + windowSpace) * index
+
+            this.buttonArray.push(this.window.addButton(this.buttonDataArray[index][0],
+                                                        text,
+                                                        buttonWidth,
+                                                        xCoordinate,
+                                                        yCoordinate))
+        }
+    }
+
+    printStartMessage() {
+        print(this.cuttingLine)
+        print("[" + this.title + " 시작!]")
+    }
+
+    terminatePrintingStatus() {
+        this.printTerminationMessage()
+        this.window.closeWindow()
+    }
+
+    // small chunk
+    printTerminationMessage() {
+        print(this.status)
+        print("[" + this.title + " 종료!]")
+    }
+
+    static get State() {
+        return {
+            windowClosed: "창을 닫아서 매크로를 종료합니다!",
+            noLogFound: "통나무가 없어요!",
+            finishedSuccessfully: "맡은 일을 다 끝냈어요!",
+        }
+    }
+}
+
+
+
+
+
+// main function
+let program = new Program(title)
+
+viewController()
+
+function viewController() {
+}
+
+function functionName0() {
+    print("button0 pressed")
+    main()
+}
+
+function functionName1() {
+    print("button1 pressed")
+    main()
+}
+
+function functionName2() {
+    print("button2 pressed")
+    main()
+}
+
+
+
+function main() {
+    program.status = Program.State.working
+    mainProcess()
+    program.terminatePrintingStatus()
+}
+
+function mainProcess() {
+    mainLoop()
+}
+
+function mainLoop() {
+    while(true) {
+        print(Character.inventory.countItem())
+        program.status = Program.State.finishedSuccessfully
+        break
+    }
+}
+
+
+
+
+
+// extension
+class Character {
+    static get inventory() {
+        return new Inventory(PBotUtils.playerInventory())
+    }
+}
+
+class Inventory {
+    constructor(inventory) {
+        this.self = inventory
+    }
+
+    countItem(string) {
+        let contents = this.self.getInventoryContents()
+        lmtFilter(contents, string)
+        return contents.length
+    }
+}
+
+function lmtFilter(arrayList, string) {
+    if(string == null || string == "") return
+    arrayList.removeIf(element => !element.includes(string))
+}
+
+function print(thing) {
+    PBotUtils.sysMsg(String(thing))
+}
+
+function numberOfTargetItemInInventory(partOfItemResourceName) {
+		const allItemInInventory = javaListToArray(PBotUtils.playerInventory().getInventoryContents())
+		const targetItemsInInventory = allItemInInventory.filter(item => item.getResname().includes(partOfItemResourceName))
+		const amountOfTargetItemInInventory = targetItemsInInventory.length
+
+		return amountOfTargetItemInInventory
+}
