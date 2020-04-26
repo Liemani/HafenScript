@@ -550,3 +550,5 @@ function sleepUntilPutTargetItems(amountOfTargetItemExpectToBeInPlayerInventory)
 		PBotUtils.sleep(500)
 	} while(targetItemsInPlayerInventory().length != amountOfTargetItemExpectToBeInPlayerInventory)
 }
+
+PBotGob은 class가 아니라 structure이다
