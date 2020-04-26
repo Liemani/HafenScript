@@ -1,9 +1,9 @@
 //********************************************
-const title = "Basic Layout"
-// made by Lieman at 2020.04.22
+const title = "BasicLayout_0.1"
+// made by Lieman at 2020.04.24
 //
 // short description:
-// basic layout
+// short description
 //********************************************
 
 
@@ -12,19 +12,10 @@ const title = "Basic Layout"
 
 // index
 
-// user edit data
 // declaration
-// constant and variable
-
+// all global constant and variable of total program
 // main function
-
 // extension
-
-
-
-
-
-// user edit data
 
 
 
@@ -34,76 +25,134 @@ const title = "Basic Layout"
 const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
 const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
 
-class Program {
-    // 더 구분해주자
-    constructor(title) {
-        // constant and variable
-        this.cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
-        this.title = title
+// 하나의 작은 단위가 아니라 이 프로그램 전체를 담당하기 때문에 모듈화를 하지는 않는다!
+// 또한 모든 변수 및 상수는 'all global constant and variable of total program'에 정의한 것을 사용한다!
+class ViewController {
+    // window
+    windowAppear() {
+        this.windowWillAppear()
 
-        this.buttonDataArray = [
-            ["functionName0", "buttonName0"],
-            ["functionName1", "buttonName1"],
-            ["functionName2", "buttonName2"],
-        ]
-
-        const windowSpace = 15
-
-        const windowTopMargin = 0
-        const windowLeftMargin =  5
-        const windowRightMargin = 5
-        const windowBottomMargin = 10
-
-        const buttonWidth = 140
-        const buttonHeight = 20
-
-        const buttonNumber = this.buttonDataArray.length
-
-        this.buttonArray = []
-
-        // calculate window size
         const windowWidth = windowLeftMargin + buttonWidth + windowRightMargin
-        const windowHeight = windowTopMargin + (buttonHeight * buttonNumber + windowSpace * (buttonNumber - 1)) + windowBottomMargin
+        const windowHeight = windowTopMargin + (buttonHeight * buttonNumber + buttonBottomMargin * (buttonNumber - 1)) + windowBottomMargin
 
-        // make window
-        this.window = PBotUtils.PBotWindow(this.title, windowHeight, windowWidth, ScriptID)
+        window = PBotUtils.PBotWindow(title, windowHeight, windowWidth, ScriptID)
 
-        // make button
+        this.windowDidAppear()
+    }
+
+    windowWillAppear() {
         for(let index = 0; index < buttonNumber; index++) {
-            const functionName = this.buttonDataArray[index][0]
-            const text = this.buttonDataArray[index][1]
+            const keyString = "button" + String(index)
+            ViewController.prototype[keyString] = function() {
+                pressedButton = index
+                main()
+            }
+        }
+    }
+
+    windowDidAppear() {
+        for(let index = 0; index < 4; index++) {
+            const text = ""
             const xCoordinate = windowLeftMargin
-            const yCoordinate = windowTopMargin + (buttonHeight + windowSpace) * index
+            const yCoordinate = windowTopMargin + (labelHeight + labelBottomMargin) * index
 
-            this.buttonArray.push(this.window.addButton(this.buttonDataArray[index][0],
-                                                        text,
-                                                        buttonWidth,
-                                                        xCoordinate,
-                                                        yCoordinate))
+            labelArray.push(window.addLabel(text, xCoordinate, yCoordinate))
         }
     }
 
-    printStartMessage() {
-        print(this.cuttingLine)
-        print("[" + this.title + " 시작!]")
+    windowDisappear() {
+        this.windowWillDisappear()
+        this.windowDidDisappear()
     }
 
-    terminateWithStatusMessage() {
-        this.printTerminationMessage()
-        this.window.closeWindow()
-    }
+    windowWillDisappear() {}
 
-    // small chunk
-    printTerminationMessage() {
-        print(this.statusMessage)
-        print("[" + this.title + " 종료!]")
-    }
+    windowDidDisappear() {}
 
-    stataic get State() {
-        return {
-            windowClosed: "창이 닫혀 프로그램을 종료합니다!"
-            finishedSuccessfully: "맡은 일을 다 끝냈어요!",
+    // button
+    buttonAppear() {
+        this.buttonWillAppear()
+
+        for(let index = 0; index < buttonNumber; index++) {
+            const functionName = "viewController.button" + String(index)
+            const text = buttonDataArray[index]
+            const xCoordinate = windowLeftMargin
+            const yCoordinate = windowTopMargin + (buttonHeight + buttonBottomMargin) * index
+
+            buttonArray.push(window.addButton(functionName,
+                                                text,
+                                                buttonWidth,
+                                                xCoordinate,
+                                                yCoordinate))
         }
+
+        this.buttonDidAppear()
+    }
+
+    buttonWillAppear() {}
+
+    buttonDidAppear() {}
+
+    buttonDisappear() {
+        this.buttonWillDisappear()
+
+        while(buttonArray.length != 0) {
+            buttonArray.pop().destroy()
+        }
+
+        this.buttonDidDisappear()
+    }
+
+    buttonWillDisappear() {}
+
+    buttonDidDisappear() {}
+
+    // label
+    labelAppear() {
+        this.labelWillAppear()
+
+        labelArray[0].setText("Status:")
+        labelArray[1].setText("    " + this.status)
+
+
+        this.labelDidAppear()
+    }
+
+    labelWillAppear() {}
+
+    labelDidAppear() {}
+
+    labelDisappear() {
+        this.labelWillDisappear()
+
+        labelArray.forEach(element => element.setText(""))
+
+        this.labelDidDisappear()
+    }
+
+    labelWillDisappear() {}
+
+    labelDidDisappear() {}
+
+    // status
+    get status() {
+        return this._status
+    }
+
+    set status(newValue) {
+        this._status = newValue
+        if(newValue != Status.waiting) this.labelAppear()
+    }
+
+    // information
+    start() {
+        print(cuttingLine)
+        print("[" + buttonDataArray[pressedButton] + " 시작!]")
+    }
+
+    end() {
+        print(this.status)
+        print("[" + buttonDataArray[pressedButton] + " 종료!]")
     }
 }
 
@@ -111,47 +160,102 @@ class Program {
 
 
 
-// constant and variable
-const windowClosedMessage = "창을 닫아서 매크로를 종료합니다!"
+// all global constant and variable of total program
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+
+const buttonDataArray = [
+    "buttonName0",
+    "buttonName1",
+    "buttonName2",
+]
+
+const windowTopMargin = 0
+const windowLeftMargin = 5
+const windowRightMargin = 5
+const windowBottomMargin = 10
+
+const buttonWidth = 140
+const buttonHeight = 20
+
+const buttonTopMargin = 0
+const buttonLeftMargin = 0
+const buttonRightMargin = 0
+const buttonBottomMargin = 15
+
+const labelWidth = 140
+const labelHeight = 10
+
+const labelTopMargin = 0
+const labelLeftMargin = 0
+const labelRightMargin = 0
+const labelBottomMargin = 10
+
+const buttonNumber = buttonDataArray.length
+
+let viewController = null
+let window = null
+let buttonArray = []
+let labelArray = []
+let pressedButton = null
+
+const Status = {
+    loading: "window will appear",
+    operating: "operating",
+    waiting: "waiting",
+    testing: "testing",
+    windowClosed: "창을 닫아서 매크로를 종료합니다!",
+    noLogFound: "통나무가 없어요!",
+    finishedSuccessfully: "맡은 일을 다 끝냈어요!",
+}
 
 
 
 
 
 // main function
-viewController()
+program()
 
-function viewController() {
-    let program = new Program(title)
-    program.printBootUpMessage()
-}
+function program() {
+    viewController = new ViewController()
 
-function functionName0() {
-    print("button0 pressed")
-    main()
-}
-
-function functionName1() {
-    print("button1 pressed")
-    main()
-}
-
-function functionName2() {
-    print("button2 pressed")
-    main()
+    viewController.windowAppear()
+    viewController.buttonAppear()
 }
 
 function main() {
+    viewController.status = Status.operating
+
+    viewController.buttonDisappear()
+    viewController.labelAppear()
+
+    viewController.start()
+
     mainProcess()
+
+    if(window.closed()) {
+        viewController.status = Status.windowClosed
+    } else {
+        viewController.status = Status.finishedSuccessfully
+    }
+
+    viewController.end()
+
+    viewController.labelDisappear()
+    viewController.buttonAppear()
+
+    viewController.status = Status.waiting
 }
 
 function mainProcess() {
+
     mainLoop()
 }
 
 function mainLoop() {
-    while() {
-        // implement body
+    while(true) {
+        print(Character.inventory.countItem())
+
+        if(true) return
     }
 }
 
@@ -162,7 +266,7 @@ function mainLoop() {
 // extension
 class Character {
     static get inventory() {
-        return PBotUtils.playerInventory()
+        return new Inventory(PBotUtils.playerInventory())
     }
 }
 
@@ -170,19 +274,43 @@ class Inventory {
     constructor(inventory) {
         this.self = inventory
     }
-    itemCount(string) {
-        this.self.getInventoryContents()
+
+    countItem(string) {
+        let contents = this.self.getInventoryContents()
+        lmtFilter(contents, string)
+        return contents.length
     }
+}
+
+function lmtFilter(arrayList, string) {
+    if(string == null || string == "") return
+    arrayList.removeIf(element => !element.includes(string))
 }
 
 function print(thing) {
     PBotUtils.sysMsg(String(thing))
 }
 
-function numberOfTargetItemInInventory(partOfItemResourceName) {
-		const allItemInInventory = javaListToArray(PBotUtils.playerInventory().getInventoryContents())
-		const targetItemsInInventory = allItemInInventory.filter(item => item.getResname().includes(partOfItemResourceName))
-		const amountOfTargetItemInInventory = targetItemsInInventory.length
+function sleep(millisecond) {
+    PBotUtils.sleep(millisecond)
+}
 
-		return amountOfTargetItemInInventory
+function gob(description) {
+    print(description)
+    let gob = PBotGobAPI.selectGob()
+}
+
+function gobs(name, description) {
+    print(description)
+
+	PBotUtils.selectArea()
+
+    const searchingAreaA = PBotUtils.getSelectedAreaA()
+    const searchingAreaB = PBotUtils.getSelectedAreaB()
+
+	let gobs = javaListToArray(PBotUtils.gobsInArea(searchingAreaA, searchingAreaB))
+
+	lmtFilter(gobs, name)
+
+	return gobs
 }

@@ -1,0 +1,298 @@
+//********************************************
+const title = "AutoPilotFloatsam_0.2"
+// made by Lieman at 2020.04.15
+//
+// short description:
+// 배를 타고 지정된 경로로 자동 항해를 합니다.
+//********************************************
+
+
+
+
+
+// index
+
+// user edit data
+// declaration
+// constant and variable
+
+// main function
+
+// extension
+
+
+
+
+
+// user edit data
+let vectors = [
+    {"예상 소요 내구": "0",
+    "목적지": "앞 바다",
+    "기준": "나르 독",},
+    [-9465.5, -8860.5],
+    [-9442, -8746],
+    [-9385, -8791],
+    [-9360.828125, -8734.5263671875],
+    [-9308.6318359375, -8875.75390625],
+]
+
+let clayPitToVault = [
+    {"예상 소요 내구": "12.5 ~ 25",
+    "목적지": "볼트",
+    "기준": "클레이 핏",},
+    [-11907.5, -5307.5],
+    [-11931.7666015625, -4888.662109375],
+    [-11851.017578125, -4094.900390625],
+    [-8431.5, -808.5],
+    [-3701.5, 18452.5],
+    [-4218.5, 19684.5],
+    [-4537.5, 19827.5],
+    [-8101.5, 27098.5],
+    [-18652.5087890625, 27032.521484375],
+    [-19576.8955078125, 26789.1787109375],
+    [-24235.986328125, 28153.7373046875],
+    [-28070.92578125, 28663.142578125],
+    [-29320.5, 32642.5],
+    [-36432.1396484375, 39567.90234375],
+    [-43543.5, 41497.5],
+    [-49076.5, 46106.5],
+    [-50968.5, 46293.5],
+    [-52618.5, 44643.5],
+    [-52684.5, 40463.5],
+    [-54191.5, 36030.5],
+    [-55522.5, 35293.5],
+    [-57315.5, 27560.5],
+    [-58260.576171875, 20885.498046875],
+]
+
+
+
+
+
+// declaration
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+
+class Status {
+    constructor() {
+        this.stop = false
+        this.text = null
+    }
+
+    stopWith(text) {
+        this.stop = true
+        this.text = text
+    }
+}
+
+class Waypoint {
+    constructor(durableConsumptionPair, waypoint) {
+        this.durableConsumption = Object.values(durableConsumptionPair)[0]
+        this.destination = Object.values(durableConsumptionPair)[1]
+        this.criteria = Object.values(durableConsumptionPair)[2]
+        this.vectors = []
+        for(let index = 0; index < waypoint.length; index++) {
+            const vector = waypoint[index]
+            this.vectors.push(new Vector(vector[0], vector[1]))
+        }
+    }
+
+    inform() {
+        print("\"" + this.destination + "\"행 오토파일럿입니다!")
+        print("예상 소요 내구도는 " + this.durableConsumption + "입니다!")
+        print("등대로 설정된 기준 오브젝트는 " + this.criteria + "입니다!")
+    }
+}
+
+class Vector {
+    constructor(x, y) {
+        this.x = x
+        this.y = y
+    }
+
+    add(vector) {
+        const x = this.x + vector.x
+        const y = this.y + vector.y
+
+        return new Vector(x, y)
+    }
+
+    subtract(vector) {
+        const x = this.x - vector.x
+        const y = this.y - vector.y
+
+        return new Vector(x, y)
+    }
+
+    parseInt() {
+        const x = parseInt(this.x)
+        const y = parseInt(this.y)
+
+        return new Vector(x, y)
+    }
+}
+
+
+
+
+
+// constant and variable
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+const descriptiveTitle = "오토파일럿"
+const window = PBotUtils.PBotWindow(title, 0, 200, ScriptID)
+
+const startMessage = "[" + title + " 시작!]"
+const selectGobMessage = "등대를 'alt + 클릭' 해주세요!"
+const startAutoPilotMessage = descriptiveTitle + "을 시작합니다!"
+const terminateMessage = "[" + title + " 종료!]"
+
+const littleRouteMessage = "경로에 최소 2개의 점을 입력해주세요!"
+const windowClosedMessage = "창을 닫아서 매크로를 종료합니다!"
+const successMessage = "목적지에 도착하여 " + descriptiveTitle + "을 종료합니다!"
+
+let lightHouseVector = null
+
+
+
+
+
+// main function
+main(clayPitToVault)
+
+function main(rawData) {
+	const waypoint = new Waypoint(rawData.shift(), rawData)
+    let status = new Status()
+
+	print(cuttingLine)
+	if(waypoint.vectors.length < 2) {
+        printTerminateWith(littleRouteMessage)
+        return
+	}
+
+	print(startMessage)
+	waypoint.inform()
+	print(selectGobMessage)
+
+	let lightHouse = PBotGobAPI.selectGob()
+
+	print(startAutoPilotMessage)
+
+	lightHouseVector = new Vector(lightHouse.getRcCoords().x, lightHouse.getRcCoords().y)
+
+    for(let index = 1; index < waypoint.vectors.length; index++) {
+        if(window.closed()) break
+        mainLoop(waypoint, index)
+    }
+
+    setTerminatingText(status)
+    printTerminateWith(status.text)
+}
+
+function setTerminatingText(status) {
+    if(window.closed()) {
+        status.text = windowClosedMessage
+    } else {
+        status.text = successMessage
+    }
+}
+
+function mainLoop(waypoint, index) {
+    let destination = lightHouseVector.add(waypoint.vectors[index].subtract(waypoint.vectors[0])).parseInt()
+
+    PBotUtils.mapClick(destination.x, destination.y, 1, 0)
+
+    waitUntilPlayerIsMoving(true)
+    if(window.closed()) return
+
+    while(PBotGobAPI.player().isMoving() == true) {
+        if(window.closed()) return
+
+        findAndRightClickGob(destination)
+
+        if(window.closed()) return
+        PBotUtils.sleep(500)
+    }
+}
+
+function findAndRightClickGob(destination) {
+    const flotsam = PBotGobAPI.findGobByNames(1000, ["gfx/terobjs/herbs/flotsam"])
+
+    if(flotsam != null) {
+        flotsam.doClick(3, 0)
+        PBotUtils.sleep(2000)
+
+        waitUntilPlayerIsMoving(false)
+        if(window.closed()) return
+
+        while(PBotGobAPI.player().isMoving() == true) {
+            if(window.closed()) return
+            PBotUtils.sleep(500)
+        }
+
+        PBotUtils.mapClick(destination.x, destination.y, 1, 0)
+
+        waitUntilPlayerIsMoving(true)
+        if(window.closed()) return
+    }
+}
+
+
+
+
+
+// extension
+function printTerminateWith(thing) {
+	print(thing)
+	print(terminateMessage)
+	window.closeWindow();
+}
+
+function print(thing) {
+    PBotUtils.sysMsg(String(thing))
+}
+
+function waitUntilPlayerIsMoving(isMoving) {
+    while(PBotGobAPI.player().isMoving() != isMoving) {
+        if(window.closed()) return
+        PBotUtils.sleep(500)
+    }
+}
+
+
+
+
+
+/*
+    const inclination = 1100
+    const yInterceptOfX = xCoord - 1100 * -89.285
+    const yInterceptOfy = yCoord - 1100 * 68.975
+
+    const length = greedPoints.length
+
+    for(let i = 0; i < length; i++) {
+        const xCoordOfPoint = greedPoints[i].x * 1100 + yInterceptOfX
+        const yCoordOfPoint = greedPoints[i].y * 1100 + yInterceptOfy
+
+        PBotUtils.mapClick(xCoordOfPoint, yCoordOfPoint, 1, 0)
+
+        while(!PBotGobAPI.player().isMoving()) PBotUtils.sleep(500)
+
+        while(PBotGobAPI.player().isMoving()) {
+            PBotUtils.sleep(500)
+
+            const flotsam = PBotGobAPI.findGobByNames(1000, ["gfx/terobjs/herbs/flotsam"])
+
+            if(flotsam != null) {
+                flotsam.doClick(3, 0)
+                PBotUtils.sleep(2000)
+                while(PBotGobAPI.player().isMoving()) PBotUtils.sleep(500)
+                PBotUtils.mapClick(xCoordOfPoint, yCoordOfPoint, 1, 0)
+                while(!PBotGobAPI.player().isMoving()) PBotUtils.sleep(500)
+            }
+        }
+    }
+
+	PBotUtils.sysMsg("[오토 파일럿을 종료합니다!]")
+	PBotUtils.sysMsg(cuttingLine)
+}
+*/
