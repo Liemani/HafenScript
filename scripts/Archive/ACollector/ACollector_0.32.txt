@@ -1,0 +1,875 @@
+//********************************************
+const title = "ACollecter_0.32"
+// made by Lieman at 2020.04.27
+//
+// description:
+//  통나무로부터 블럭과 보드를 얻고
+//  빈 땅에 스톡파일로 쌓아주는 프로그램
+//  아울러 통나무가 없어도
+//  땅에 있는 블럭, 보드를 주워서 정리합니다!
+//
+// 대상:
+//  블럭, 보드
+//
+// 사용 방법:
+//  원하는 버튼을 누르십시오.
+//  해당 매크로 창에서 지시하는 사항을 따르십시오.
+//  프로그램 종료를 원하시면 해당 매크로 창을 닫으십시오.
+//
+// 주의사항:
+//  채집 대상은 원활한 패스파인딩을 위하여
+//  가급적 한 타일에 두 개 이상 두지 마세요!
+//
+// ps:
+//  본 매크로는 Purus Pasta 클라이언트에 최적화되어 있습니다
+//********************************************
+//  0.31
+// - 바닥에 떨어진 아이템을 줍다가 멈출 수 있던 문제 수정
+// - 꽉 찬 스톡파일에 계속 아이템을 넣으려 시도하던 문제 수정
+//********************************************
+//  0.32
+// - 알고 있는 스톡파일에 아이템을 넣을 때 패스파인딩을 사용하지 않던 오류 수정
+// - 바닥에 떡어진 아이템을 주울 때 패스파인딩을 사용하지 않던 오류 수정
+//********************************************
+
+
+
+
+
+// index
+
+// declaration
+// all global constant and variable of total program
+// main function
+// extension
+
+
+
+
+
+// declaration
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI")
+const Coord = Java.type("haven.Coord")
+
+// 하나의 작은 단위가 아니라 이 프로그램 전체를 담당하기 때문에 모듈화를 하지는 않는다!
+// 또한 모든 변수 및 상수는 'all global constant and variable of total program'에 정의한 것을 사용한다!
+class ViewController {
+    // window
+    windowAppear() {
+        this.windowWillAppear()
+
+        const windowWidth = windowLeftMargin + buttonWidth + windowRightMargin
+        const windowHeight = windowTopMargin + (buttonHeight * buttonNumber + buttonBottomMargin * (buttonNumber - 1)) + windowBottomMargin
+
+        window = PBotUtils.PBotWindow(title, windowHeight, windowWidth, ScriptID)
+
+        this.windowDidAppear()
+    }
+
+    windowWillAppear() {
+        for(let index = 0; index < buttonNumber; index++) {
+            const keyString = "button" + String(index)
+            ViewController.prototype[keyString] = function() {
+                pressedButton = index
+                main()
+            }
+        }
+    }
+
+    windowDidAppear() {
+        for(let index = 0; index < 4; index++) {
+            const text = ""
+            const xCoordinate = windowLeftMargin
+            const yCoordinate = windowTopMargin + (labelHeight + labelBottomMargin) * index
+
+            labelArray.push(window.addLabel(text, xCoordinate, yCoordinate))
+        }
+    }
+
+    windowDisappear() {
+        this.windowWillDisappear()
+        this.windowDidDisappear()
+    }
+
+    windowWillDisappear() {}
+
+    windowDidDisappear() {}
+
+    // button
+    buttonAppear() {
+        this.buttonWillAppear()
+
+        for(let index = 0; index < buttonNumber; index++) {
+            const functionName = "viewController.button" + String(index)
+            const text = buttonDataArray[index]
+            const xCoordinate = windowLeftMargin
+            const yCoordinate = windowTopMargin + (buttonHeight + buttonBottomMargin) * index
+
+            buttonArray.push(window.addButton(functionName,
+                                                text,
+                                                buttonWidth,
+                                                xCoordinate,
+                                                yCoordinate))
+        }
+
+        this.buttonDidAppear()
+    }
+
+    buttonWillAppear() {
+        this.cleanUp()
+    }
+
+    buttonDidAppear() {}
+
+    buttonDisappear() {
+        this.buttonWillDisappear()
+
+        while(buttonArray.length != 0) {
+            buttonArray.pop().destroy()
+        }
+
+        this.buttonDidDisappear()
+    }
+
+    buttonWillDisappear() {}
+
+    buttonDidDisappear() {}
+
+    // label
+    labelAppear() {
+        this.labelWillAppear()
+
+        labelArray[0].setText("Status:")
+        labelArray[1].setText("    " + this.status)
+
+
+        this.labelDidAppear()
+    }
+
+    labelWillAppear() {}
+
+    labelDidAppear() {}
+
+    labelDisappear() {
+        this.labelWillDisappear()
+
+        labelArray.forEach(element => element.setText(""))
+
+        this.labelDidDisappear()
+    }
+
+    labelWillDisappear() {}
+
+    labelDidDisappear() {}
+
+    // clean up
+    cleanUp() {
+        this.shouldStop = false
+
+        pressedButton = null
+        task = null
+        workplace = null
+        storage = null
+
+        logArrayList = null
+        stockableLocationArray = null
+
+        log = null
+        stockableLocation = null
+        stockpileLMTGob.cleanUp()
+        productGob = null
+    }
+
+    // status
+    get status() {
+        return this._status
+    }
+
+    set status(newValue) {
+        this._status = newValue
+        if(newValue != Status.waiting()) this.labelAppear()
+    }
+
+    // shouldStop
+    get shouldStop() {
+        return window.closed() || this._shouldStop
+    }
+
+    set shouldStop(newValue) {
+        this._shouldStop = newValue
+    }
+
+    // information
+    start() {
+        print(cuttingLine)
+        print("[" + buttonDataArray[pressedButton] + " 시작]")
+    }
+
+    end() {
+        print(this.status)
+        print("[" + buttonDataArray[pressedButton] + " 종료]")
+    }
+}
+
+class LMTGob {
+    constructor(id) {
+        this.id = id
+    }
+
+    get isExist() {
+        if(this.id == null) return false
+        return PBotGobAPI.findGobById(this.id) != null
+    }
+
+    get toPBotGob() {
+        if(this.id == null) return false
+        return PBotGobAPI.findGobById(this.id)
+    }
+
+    get isFull() {
+        if(this.id == null) return false
+        return this.toPBotGob.stockpileIsFull()
+    }
+
+    cleanUp() {
+        this.id = null
+    }
+
+    static new(PBotGob) {
+        return new LMTGob(PBotGob.getGobId())
+    }
+}
+
+
+
+
+
+// all global constant and variable of total program
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+
+const characterSize = 5.6
+
+const buttonDataArray = [
+    "블럭",
+    "보드",
+    // "테스트",
+]
+
+const windowTopMargin = 0
+const windowLeftMargin = 5
+const windowRightMargin = 5
+const windowBottomMargin = 10
+
+const buttonWidth = 140
+const buttonHeight = 20
+
+const buttonTopMargin = 0
+const buttonLeftMargin = 0
+const buttonRightMargin = 0
+const buttonBottomMargin = 15
+
+const labelWidth = 140
+const labelHeight = 10
+
+const labelTopMargin = 0
+const labelLeftMargin = 0
+const labelRightMargin = 0
+const labelBottomMargin = 10
+
+const buttonNumber = buttonDataArray.length
+
+let viewController = null
+let window = null
+let buttonArray = []
+let labelArray = []
+
+let pressedButton = null
+let task = null
+let workplace = null
+let storage = null
+
+let logArrayList = null
+let stockableLocationArray = null
+
+let log = null
+let stockableLocation = null
+let stockpileLMTGob = new LMTGob()
+let productGob = null
+
+const Status = {
+    loading: function(item) { return "window will appear" },
+    runnable: function(item) { return "준비 완료!" },
+    operating: function(item) { return "작동 중.." },
+
+    selectingGob: function(item) { return item.description + "을(를) alt+클릭 해주세요!" },
+    selectingGobs: function(item) { return item.description + " 영역 드래그!" },
+
+    noProducerFound: function(item) { viewController.shouldStop = true; return item.description + "이(가) 없어요!" },
+    noSpaceForStockpile: function(item) { viewController.shouldStop = true; return item.description + " 스톡파일을 만들 공간이 없어요!" },
+    windowClosed: function(item) { viewController.shouldStop = true; Player.cancelAction(); return "창을 닫아서 매크로를 종료합니다!" },
+
+    moving: function(item) { return "이동 중.." },
+    taking: function(item) { return item.description + " 채집 중.." },
+    working: function(item) { return "열심히 일하는 중.." },
+    waiting: function(item) { return "기다리는 중.." },
+    storing: function(item) { return item.description + " 쌓는 중.." },
+    pickingUp: function(item) { return item.description + " 줍는 중.." },
+
+    finishedSuccessfully: function(item) { return "작업을 완료했어요!" },
+}
+
+
+
+
+
+// main function
+program()
+
+function program() {
+    viewController = new ViewController()
+
+    viewController.windowAppear()
+    viewController.buttonAppear()
+}
+
+function main() {
+    viewController.status = Status.operating()
+
+    viewController.buttonDisappear()
+    viewController.labelAppear()
+
+    viewController.start()
+
+    mainProcess()
+
+    if(!viewController.shouldStop) {
+        viewController.status = Status.finishedSuccessfully()
+    }
+
+    viewController.end()
+
+    viewController.labelDisappear()
+    viewController.buttonAppear()
+
+    viewController.status = Status.waiting()
+}
+
+function mainProcess() {
+    switch (pressedButton) {
+        case 0:
+            task = new SimpleTask("blockFromLog")
+            break
+        case 1:
+            task = new SimpleTask("boardFromLog")
+            break
+        case 2:
+            testCode()
+            return
+        default:
+            print("switch error has occured!")
+            return
+    }
+
+    mainLoop()
+}
+
+function testCode() {
+    const testThing = "this is test"
+    print(testThing)
+    print(testThing.toString())
+    print(testThing.constructor.name)
+}
+
+function mainLoop() {
+    workplace = new Workplace(task)
+    logArrayList = workplace.producerGobArrayList
+
+    if(window.closed()) viewController.status = Status.windowClosed()
+    if(viewController.shouldStop) return
+
+    storage = new Storage(task)
+    stockableLocationArray = storage.stockableLocationArray
+
+    viewController.status = Status.working()
+
+    sense()
+    while(!Player.isHandEmpty
+        || isGobExist(log)
+        || isGobExist(productGob)
+        || Player.inventory.isItemExist(task.product)) {
+
+        if(window.closed()) viewController.status = Status.windowClosed()
+        if(viewController.shouldStop) return
+
+        if(!Player.isHandEmpty) {
+            viewController.status = Status.storing(task.product)
+            storeItem()
+        } else if(isGobExist(log)) {
+            viewController.status = Status.taking(task.product)
+            takeProductFromProducer()
+        } else if(isGobExist(productGob)) {
+            viewController.status = Status.pickingUp(task.product)
+            pickUpProduct()
+        } else if(Player.inventory.isItemExist(task.product)) {
+            viewController.status = Status.storing(task.product)
+            storeItem()
+        }
+
+        if(window.closed()) viewController.status = Status.windowClosed()
+        if(viewController.shouldStop) return
+
+        sense()
+    }
+}
+
+function sense() {
+    senseLog()
+    senseStockableLocation()
+    senseProductGob()
+    senseStockpile()
+}
+
+function senseLog() {
+    if(!isGobExist(log) && logArrayList.length > 0) {
+        log = logArrayList.remove(0)
+    }
+}
+
+function senseStockableLocation() {
+    if(stockableLocation == null) {
+        if(stockableLocationArray.length > 0) {
+            stockableLocation = stockableLocationArray.shift()
+        } else {
+            viewController.status = Status.noSpaceForStockpile(task.product)
+        }
+    }
+}
+
+function senseProductGob() {
+    const productGobArrayList = workplace.productGobArrayList
+    if(!isGobExist(productGob) && productGobArrayList.length > 0) {
+        productGob = productGobArrayList[0]
+    }
+}
+
+function senseStockpile() {
+    if(stockpileLMTGob.isExist && stockpileLMTGob.isFull) {
+        stockpileLMTGob.id = null
+    }
+}
+
+function storeItem() {
+    if(!stockpileLMTGob.isExist) {
+        makeStockpile()
+    }
+
+    storeItemToStockpile()
+}
+
+function makeStockpile() {
+    if(Player.isHandEmpty) {
+        Player.inventory.anItem(task.product).takeItem(true)
+    }
+
+    PBotGobAPI.makePile()
+
+    const spareDistance = (task.product.stockpileSize + characterSize) / 2 >= 11 ? 22 : 11
+    while(!PBotUtils.pfLeftClick(stockableLocation.x + spareDistance, stockableLocation.y)
+        && !PBotUtils.pfLeftClick(stockableLocation.x - spareDistance, stockableLocation.y)
+        && !PBotUtils.pfLeftClick(stockableLocation.x, stockableLocation.y + spareDistance)
+        && !PBotUtils.pfLeftClick(stockableLocation.x, stockableLocation.y - spareDistance)) {
+
+        if(window.closed()) return
+
+        PBotUtils.sysMsg("스톡파일을 만들 위치 상하좌우로의 길찾기를 실패했어요!") // 사실 길을 찾는 순서는 우좌하상
+        PBotUtils.sysMsg("스톡파일을 만들 다음 위치로 넘어갑니다.")
+
+        if (stockableLocationArray.length > 0) {
+            stockableLocation = stockableLocationArray.shift()
+        } else {
+            viewController.status = Status.noSpaceForStockpile(task.product)
+            return
+        }
+    }
+
+    PBotGobAPI.placeThing(stockableLocation.x, stockableLocation.y)
+    PBotGobAPI.waitForGob(stockableLocation.x, stockableLocation.y)
+
+    stockableLocation = null
+
+    stockpileLMTGob.id = PBotGobAPI.findGobByNames(100, [task.product.stockpileName]).getGobId()
+}
+
+function storeItemToStockpile() {
+    if(Player.isHandEmpty) {
+        Player.inventory.anItem(task.product).takeItem(true)
+    }
+    stockpileLMTGob.toPBotGob.pfClick(1, 0)
+    stockpileLMTGob.toPBotGob.itemClick(1)
+    sleep(1000)
+}
+
+function takeProductFromProducer() {
+    log.pfClick(3, 0)
+
+    if(window.closed()) return
+
+    PBotUtils.waitForFlowerMenu()
+    PBotUtils.choosePetal(task.petal)
+    PBotUtils.waitForHourglass()
+
+    if(window.closed()) return
+
+    Player.cancelAction()
+}
+
+function pickUpProduct() {
+    pickUpGobs(workplace.productGobArrayList)
+}
+
+
+
+
+
+// extension
+class Player {
+    static get inventory() {
+        return new Inventory(PBotUtils.playerInventory())
+    }
+
+    static get character() {
+     return PBotGobAPI.player()
+    }
+
+    static get isHandEmpty() {
+        return PBotUtils.getItemAtHand() == null
+    }
+
+    static cancelAction() {
+        Player.character.doClick(1, 0)
+    }
+}
+
+class Inventory {
+    constructor(inventory) {
+        this.self = inventory
+    }
+
+    itemCount(item) {
+        return this.itemList(item).length
+    }
+
+    isItemExist(item) {
+        return this.itemCount(item) != 0
+    }
+
+    itemList(item) {
+        let contents = this.contentList
+        lmtFilter(contents, item.itemNameArray)
+
+        return contents
+    }
+
+    anItem(item) {
+        return this.itemList(item)[0]
+    }
+
+    get contentList() {
+        return this.self.getInventoryContents()
+    }
+}
+
+class SimpleTask {
+    constructor(simpleTaskName) {
+        const simpleTaskData = SimpleTask.simpleTaskDataArray[simpleTaskName]
+
+        this.producer = new Item(simpleTaskData[0])
+        this.product = new Item(simpleTaskData[1])
+        this.petal = simpleTaskData[2]
+        this.description = simpleTaskData[3]
+    }
+
+    // private
+    static get keys() {
+        return [
+            "producer",
+            "product",
+            "petal",
+            "description",]
+    }
+
+    static get simpleTaskDataArray() {
+        return {
+            "blockFromLog": [
+                "log",
+                "block",
+                "Chop into blocks",
+                "블럭",],
+            "boardFromLog": [
+                "log",
+                "board",
+                "Make boards",
+                "보드",],
+        }
+    }
+}
+
+class Item {
+    constructor(name) {
+        const itemData = Item.itemsDataArray[name]
+
+        for(let index = 0; index < Item.keys.length; index++) {
+            this[Item.keys[index]] = itemData[index]
+        }
+    }
+
+    // private
+    static get keys() {
+        return [
+            "itemNameArray",
+            "gobNameArray",
+            "stockpileName",
+            "stockpileSize",
+            "description",]
+    }
+
+    static get itemsDataArray() {
+        return {
+           "log": [
+               ["null"],
+               ["log", "oldtrunk"],
+               "null",
+               "null",
+               "통나무",],
+           "block": [
+               ["gfx/invobjs/wblock"],
+               ["gfx/terobjs/items/wblock"],
+               "gfx/terobjs/stockpile-wblock",
+               11,
+               "블럭",],
+           "board": [
+               ["gfx/invobjs/board"],
+               ["gfx/terobjs/items/board"],
+               "gfx/terobjs/stockpile-board",
+               16.5,
+               "보드",],
+       }
+    }
+}
+
+class Frame {
+    constructor(x, y, width, height) {
+        this.x = x
+        this.y = y
+        this.width = width
+        this.height = height
+    }
+
+    static initializeFromCoord(coord1, coord2) {
+        const x = coord1.x
+        const y = coord1.y
+        const width = coord2.x - coord1.x
+        const height = coord2.y - coord1.y
+
+        return new Frame(x, y, width, height)
+    }
+
+    get coordA() {
+        return new Coord(this.x, this.y)
+    }
+
+    get coordB() {
+        return new Coord(this.x + this.width, this.y + this.height)
+    }
+
+    get top() {
+        return this.y
+    }
+
+    get left() {
+        return this.x
+    }
+
+    get right() {
+        return this.x + this.width
+    }
+
+    get bottom() {
+        return this.y + this.hegith
+    }
+
+    get description() {
+        return "[class: Frame, x: " + this.x + ", y: " + this.y + ", width: " + this.width + ", hegith: " + this.height + "]"
+    }
+}
+
+class SearchFrame extends Frame {
+    constructor(x, y, width, height) {
+        super(x, y, width, height)
+    }
+
+    static initializeFromCoord(coord1, coord2) {
+        const x = coord1.x
+        const y = coord1.y
+        const width = coord2.x - coord1.x
+        const height = coord2.y - coord1.y
+
+        return new SearchFrame(x, y, width, height)
+    }
+
+    gobArrayList(item) {
+        let gobArrayList = PBotUtils.gobsInArea(this.coordA, this.coordB)
+        lmtFilter(gobArrayList, item.gobNameArray)
+
+        return gobArrayList
+    }
+}
+
+class Storage extends SearchFrame {
+    constructor(task) {
+        super(0, 0, 0, 0)
+        this.task = task
+
+        selectArea(task.product)
+
+        this.x = PBotUtils.getSelectedAreaA().x
+        this.y = PBotUtils.getSelectedAreaA().y
+        this.width = PBotUtils.getSelectedAreaB().x - PBotUtils.getSelectedAreaA().x
+        this.height = PBotUtils.getSelectedAreaB().y - PBotUtils.getSelectedAreaA().y
+    }
+
+    get stockableLocationArray() {
+        let stockableLocationArray = []
+
+        const top = this.y
+        const left = this.x
+        const right = this.x + this.width
+        const bottom = this.y + this.height
+
+        const stockpileSize = this.task.product.stockpileSize
+
+        let yCoordinate = top + stockpileSize / 2
+        const yLimit = bottom - stockpileSize / 2
+        for(; yCoordinate <= yLimit; yCoordinate += stockpileSize) {
+            let xCoordinate = left + stockpileSize / 2
+            const xLimit = right - stockpileSize / 2
+            for(; xCoordinate <= xLimit; xCoordinate += stockpileSize) {
+                stockableLocationArray.push(new Vector(xCoordinate, yCoordinate))
+            }
+        }
+
+        if(stockableLocationArray.length == 0) viewController.status = Status.noSpaceForStockpile(task.product)
+
+        return stockableLocationArray
+    }
+}
+
+class Workplace extends SearchFrame {
+    constructor(task) {
+        super(0, 0, 0, 0)
+
+        this.padding = 11
+
+        this.task = task
+
+        selectArea(task.producer)
+
+        const coord1 = PBotUtils.getSelectedAreaA()
+        const coord2 = PBotUtils.getSelectedAreaB()
+
+        this.contentFrame = SearchFrame.initializeFromCoord(coord1, coord2)
+
+        this.x = coord1.x - this.padding
+        this.y = coord1.y - this.padding
+        this.width = coord2.x - coord1.x + this.padding * 2
+        this.height = coord2.y - coord1.y + this.padding * 2
+    }
+
+    get producerGobArrayList() {
+        return this.contentFrame.gobArrayList(task.producer)
+    }
+
+    get productGobArrayList() {
+        return this.gobArrayList(task.product)
+    }
+}
+
+class Vector {
+    constructor(x, y) {
+        this.x = x
+        this.y = y
+    }
+
+    static initializeFromCoord(coord) {
+        return new Vector(coord.x, coord.y)
+    }
+
+    get description() {
+        return "[class: Vector, x: " + this.x + ", y: " + this.y + "]"
+    }
+
+    formAdd(vector) {
+        this.x = this.x + vector.x
+        this.y = this.y + vector.y
+    }
+
+    formSubtarct(vector) {
+        this.x = this.x - vector.x
+        this.y = this.y - vector.y
+    }
+}
+
+function lmtFilter(arrayList, stringArray) {
+    if(stringArray == null || stringArray.length == 0) return
+    arrayList.removeIf(element => stringArray.reduce((result, string) => result && !element.getResname().includes(string), true))
+}
+
+function print(thing) {
+    PBotUtils.sysMsg(String(thing))
+}
+
+function sleep(millisecond) {
+    PBotUtils.sleep(millisecond)
+}
+
+function selectGob() {
+    return PBotGobAPI.selectGob()
+}
+
+function selectGobs(item) {
+	selectArea(item)
+
+    const searchingAreaA = PBotUtils.getSelectedAreaA()
+    const searchingAreaB = PBotUtils.getSelectedAreaB()
+
+	let gobs = PBotUtils.gobsInArea(searchingAreaA, searchingAreaB)
+
+	lmtFilter(gobs, item.gobNameArray)
+
+	return gobs
+}
+
+function selectArea(item) {
+    viewController.status = Status.selectingGobs(item)
+    PBotUtils.selectArea()
+}
+
+function isGobExist(gob) {
+    if(gob == null) return false
+    return PBotGobAPI.findGobById(gob.getGobId()) != null
+}
+
+function pickUpGobs(gobArrayList) {
+    for(let index = 0; index < gobArrayList.length; index++) {
+        const gob = gobArrayList[index]
+        gob.pfClick(3, 0)
+
+        while(isGobExist(gob)) {
+            if(!Player.isHandEmpty) return
+            if(window.closed()) return
+            sleep(100)
+        }
+    }
+}
