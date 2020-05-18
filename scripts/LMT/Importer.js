@@ -1,6 +1,6 @@
 //********************************************
 // const title = "Importer.js"
-// made by Lieman at 2020.05.17
+// made by Lieman at 2020.05.18
 //
 // description:
 //  root directory is where this Importer.js file is.
@@ -17,44 +17,37 @@ class Importer {
         let fileStack = []
 
         // private method
-        function hasImported(string) {
-            return depthDict[string] != null ? true : false
+        function hasImported(path) {
+            return depthDict[path] != null ? true : false
         }
 
-        function depthOf(string) {
-            return string.split("/").length - 1
+        function depthOf(path) {
+            return path.split("/").length - 1
         }
 
-        function loadFrom(string) {
+        function loadFrom(path) {
             let currentFilePath = fileStack[fileStack.length - 1]
-            let resultPath = string
-
+            
+            let loadingPath = path
             for(let depth = 0; depth < depthOf(string); depth++) {
-                resultPath = "../" + resultPath
+                loadingPath = "../" + loadingPath
             }
 
-            fileStack.push(string)
-            load(resultPath)
+            fileStack.push(path)
+            load(loadingPath)
             fileStack.pop()
         }
 
-        function import(string) {
-            loadFrom(string)
-            depthDict[string] = depthOf(string)
+        function import(path) {
+            loadFrom(path)
+            depthDict[path] = depthOf(path)
         }
 
         // public method
-        this.import = function(string) {
-            if(!hasImported(string)) {
-                import(string)
+        this.import = function(path) {
+            if(!hasImported(path)) {
+                import(path)
             }
         }
-    }
-}
-
-// import custom js
-function loadJS(string) {
-    if() {
-        load(string)
     }
 }
