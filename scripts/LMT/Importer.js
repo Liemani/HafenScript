@@ -29,7 +29,7 @@ class Importer {
             let currentFilePath = fileStack[fileStack.length - 1]
             
             let loadingPath = path
-            for(let depth = 0; depth < depthOf(string); depth++) {
+            for(let depth = 0; depth < depthOf(currentFilePath); depth++) {
                 loadingPath = "../" + loadingPath
             }
 
