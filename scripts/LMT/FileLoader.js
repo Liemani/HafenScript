@@ -1,5 +1,5 @@
 //********************************************
-const title = "Importer.js"
+const title = "Importer"
 // made by Lieman
 //
 // description:
@@ -11,7 +11,7 @@ const title = "Importer.js"
 
 
 // import
-load("model/Path.js")
+// load("model/Path.js")
 
 
 

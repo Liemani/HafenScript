@@ -1,6 +1,6 @@
 //********************************************
-// const title = "script"
-// made by Lieman at 2020.05.17
+const title = "script"
+// made by Lieman
 //
 // description:
 //  describe here...
@@ -21,6 +21,7 @@ const LMTThread = Java.type("java.lang.Thread")
 const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
 const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
 const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI")
+// const LMTThread = Java.type("java.lang.Thread")
 
 
 

@@ -1,0 +1,45 @@
+//********************************************
+const title = "ALMTATest"
+// made by Lieman
+//
+// short description:
+// Test
+//********************************************
+
+/*
+class Size2 {
+    constructor(width, height) {
+        this.width = init(width)
+        this.height = init(height)
+    }
+}
+*/
+
+load("LMT/UI/View.js")
+//load("LMT/Study/02_checkUndefine.js")    // run all base code in that file
+
+if (typeof PBotUtils == undefined) {
+    const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+}
+
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI")
+const Coord = Java.type("haven.Coord")
+
+function printSystemChatWindow(thing) {
+    PBotUtils.sysMsg(String(thing))
+}
+
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+
+printSystemChatWindow(cuttingLine)
+
+
+
+var abcd = 0
+var aabbccdd = 0
+aabbccdd = "hi"
+
+
+
+var mySize = new Size(10, 10)
