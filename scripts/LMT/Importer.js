@@ -1,6 +1,6 @@
 //********************************************
-// const title = "Importer.js"
-// made by Lieman at 2020.05.18
+const title = "Importer.js"
+// made by Lieman
 //
 // description:
 //  root directory is where this Importer.js file is.

@@ -1,6 +1,6 @@
 //********************************************
 const title = "BasicLayout_0.1"
-// made by Lieman at 2020.04.24
+// made by Lieman
 //
 // short description:
 // short description
