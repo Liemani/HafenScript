@@ -16,7 +16,7 @@ class Size2 {
 */
 
 load("LMT/UI/View.js")
-//load("LMT/Study/02_checkUndefine.js")    // run all base code in that file
+// load("../Study/02_checkUndefine.js")    // run all base code in that file
 
 if (typeof PBotUtils == undefined) {
     const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
