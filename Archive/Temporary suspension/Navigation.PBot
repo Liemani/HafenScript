@@ -1,0 +1,67 @@
+const PBotUtils = Java.type('haven.purus.pbot.PBotUtils');
+const PBotWindowAPI = Java.type('haven.purus.pbot.PBotWindowAPI');
+const PBotGobAPI = Java.type('haven.purus.pbot.PBotGobAPI');
+
+function javaListToArray(javalist) {
+	const ret = [];
+	for(let i=0; i<javalist.length; i++)
+		ret.push(javalist.get(i));
+	return ret;
+};
+
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+
+
+
+
+
+class Point {
+    constructor(
+        x,
+        y
+    ) {
+        this.x = x
+        this.y = y
+    }
+}
+
+const greedPoints = [
+    new Point(-9465.5, -8860.5),
+    new Point(-9491.7109375, -8700.69921875),
+    new Point(-9350.3115234375, -8708.2509765625)
+]
+
+
+
+
+
+function main() {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("시작")
+	PBotUtils.sysMsg("등대를 alt + 좌클릭 해주세요")
+
+	let gob = PBotGobAPI.selectGob()
+
+    const xCoord = gob.getRcCoords().x
+    const yCoord = gob.getRcCoords().y
+
+    const inclination = 1100
+    const yInterceptOfX = xCoord - 1100 * -89.285
+    const yInterceptOfy = yCoord - 1100 * 68.975
+
+    const length = greedPoints.length
+
+    for(let i = 0; i < length; i++) {
+        const xCoordOfPoint = greedPoints[i].x * 1100 + yInterceptOfX
+        const yCoordOfPoint = greedPoints[i].y * 1100 + yInterceptOfy
+
+        PBotUtils.mapClick(xCoordOfPoint, yCoordOfPoint, 1, 0)
+        while(!PBotGobAPI.player().isMoving()) PBotUtils.sleep(500)
+        while(PBotGobAPI.player().isMoving()) PBotUtils.sleep(500)
+    }
+
+	PBotUtils.sysMsg("끝")
+	PBotUtils.sysMsg(cuttingLine)
+}
+
+main()

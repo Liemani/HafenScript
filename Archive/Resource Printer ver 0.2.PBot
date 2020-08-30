@@ -1,0 +1,122 @@
+// 리소스 데이터 출력기 ver. 0.2
+// made by Lieman
+//
+// 각종 리소스 데이터를 출력합니다
+
+// UI setting
+const title = "리소스 데이터 출력기 ver. 0.2  "
+
+const buttonWidth = 140
+const buttonHeight = 20
+const buttonNumber = 5
+
+const outlineHeightGap = 5
+const buttonGap = 10
+
+const customAddWindowWidth = 50
+
+const windowWidth = buttonWidth + outlineHeightGap * 2 + customAddWindowWidth
+const windowHeight = buttonHeight * buttonNumber + outlineHeightGap * 2 + buttonGap * (buttonNumber - 1)
+
+const outlineWidthGap = (windowWidth - buttonWidth) / 2
+
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils");
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI");
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI");
+const window = PBotUtils.PBotWindow(title, windowHeight, windowWidth, ScriptID);
+
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+
+const gobResourcePrintButton = window.addButton("gobResourcePrint", "gob", buttonWidth, outlineWidthGap, outlineHeightGap);
+const itemResourcePrintButton = window.addButton("itemResourcePrint", "아이템 ", buttonWidth, outlineWidthGap, buttonHeight * 1 + outlineHeightGap * 1 + buttonGap * 1);
+const playerPoseResourcePrintButton = window.addButton("playerPosesResourcePrint", "플레이어 포즈들  ", buttonWidth, outlineWidthGap, buttonHeight * 2 + outlineHeightGap * 1 + buttonGap * 2);
+const printDistanceOfGapButton = window.addButton("printDistanceOfGap", "물체 거리 출력  ", buttonWidth, outlineWidthGap, buttonHeight * 3 + outlineHeightGap * 1 + buttonGap * 3);
+const printPositionOfGobButton = window.addButton("printPositionOfGob", "물체 위치 출력  ", buttonWidth, outlineWidthGap, buttonHeight * 4 + outlineHeightGap * 1 + buttonGap * 4);
+
+let stop = false;
+
+const shouldStop = () => {
+	return (stop || window.closed());
+};
+
+javaListToArray = (javalist) => {
+	const ret = [];
+	for(let i=0; i<javalist.size(); i++)
+		ret.push(javalist.get(i));
+	return ret;
+};
+
+const gobResourcePrint = () => {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 시작!]")
+	PBotUtils.sysMsg("리소스를 찾을 gob을 alt 클릭 해주세요.")
+
+	let gob = PBotGobAPI.selectGob()
+
+	PBotUtils.sysMsg("리소스 이름 : " + gob.getResname());
+	PBotUtils.sysMsg("포즈들 리소스 이름 : " + gob.getPoses());
+	PBotUtils.sysMsg("gob id : " + gob.getGobId());
+
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 완료!]");
+	PBotUtils.sysMsg(cuttingLine);
+}
+
+const itemResourcePrint = () => {
+	PBotUtils.sysMsg(cuttingLine);
+	PBotUtils.sysMsg("[아이템 리소스 이름 출력 시작!]");
+	PBotUtils.sysMsg("인벤토리에서 리소스 이름을 찾을 아이템을 선택해주세요.");
+
+	const selectedItem = PBotUtils.selectItem();
+
+	PBotUtils.sysMsg("아이템 이름 : " + selectedItem.getName());
+	PBotUtils.sysMsg("아이템 리소스 이름 : " + selectedItem.getResname());
+	PBotUtils.sysMsg("아이템 컨텐츠 : " + selectedItem.getContents());
+	PBotUtils.sysMsg("아이템 이름/리소스 이름 : " + selectedItem.getName() + "/" + selectedItem.getResname());
+
+	PBotUtils.sysMsg("[아이템 리소스 이름 출력 완료!]");
+	PBotUtils.sysMsg(cuttingLine);
+}
+
+const playerPosesResourcePrint = () => {
+	PBotUtils.sysMsg(cuttingLine);
+	PBotUtils.sysMsg("[플레이어 포즈들 리소스 이름 출력 시작!]");
+    
+	PBotUtils.sysMsg("플레이어 포즈들 리소스 이름 : " + PBotGobAPI.player().getPoses());
+
+	PBotUtils.sysMsg("[플레이어 포즈들 리소스 이름 출력 완료!]");
+	PBotUtils.sysMsg(cuttingLine);
+}
+
+function printDistanceOfGap() {
+	PBotUtils.sysMsg(cuttingLine);
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 시작!]");
+	PBotUtils.sysMsg("떨어진 거리를 측정할 gob들이 있는 영역을 선택해주세요.");
+
+	PBotUtils.selectArea();
+
+	let gobs = javaListToArray(PBotUtils.gobsInArea(PBotUtils.getSelectedAreaA(), PBotUtils.getSelectedAreaB()));
+
+	const xDistance = gobs[0].getRcCoords().x - gobs[1].getRcCoords().x
+	const yDistance = gobs[0].getRcCoords().y - gobs[1].getRcCoords().y
+
+	const distance = Math.sqrt(Math.pow(xDistance, 2) + Math.pow(yDistance, 2))
+
+	PBotUtils.sysMsg("떨어진 거리 : " + distance);
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 완료!]");
+	PBotUtils.sysMsg(cuttingLine);
+}
+
+function printPositionOfGob() {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 시작!]")
+	PBotUtils.sysMsg("리소스를 찾을 gob을 alt 클릭 해주세요.")
+
+	let gob = PBotGobAPI.selectGob()
+
+	PBotUtils.sysMsg("리소스 이름 : " + gob.getResname());
+	PBotUtils.sysMsg("위치 : (" + gob.getRcCoords().x + ", " + gob.getRcCoords().y + ")");
+	PBotUtils.sysMsg("gob id : " + gob.getGobId());
+
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 완료!]");
+	PBotUtils.sysMsg(cuttingLine);
+}

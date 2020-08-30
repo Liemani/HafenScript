@@ -1,0 +1,135 @@
+// Used to make cloth from flax
+// Best way to prevent synchronization issues between client and server is to keep the state of what player should be doing next, what items should be in inventory, etc. client side, and then wait until the state told by server changes to this state
+// Made by Purus Cor to demonstrate usage of PBot API
+// For more information about API, join Purus Pasta discord
+// To suggest features into API, suggest them in discord
+
+const PBotUtils = Java.type('haven.purus.pbot.PBotUtils');
+const PBotGobAPI = Java.type('haven.purus.pbot.PBotGobAPI');
+const PBotWindowAPI = Java.type('haven.purus.pbot.PBotWindowAPI');
+const window = PBotUtils.PBotWindow("Rope Maker", 200, 200, ScriptID);
+const ropeStockpiles = [];
+const flaxStockpiles = [];
+let stop = false;
+const shouldStop = () => {
+	return (stop || window.closed());
+};
+let ropewalkGob, ropeMade = 0;
+
+window.addButton("ropeBtn", "Add rope stockpiles", 180, 10, 10);
+window.addButton("flaxBtn", "Add flax/hemp stockpiles", 180, 10, 40);
+window.addButton("ropewalkBtn", "Choose a Ropewalk", 180, 10, 70);
+window.addButton("startBtn", "Start", 180, 10, 100);
+
+const ropeBtn = () => {
+	PBotUtils.selectArea();
+	const gobs = PBotUtils.gobsInArea(PBotUtils.getSelectedAreaA(), PBotUtils.getSelectedAreaB());
+	for(let i=0; i<gobs.size(); i++) {
+		if(gobs[i].getResname() === 'gfx/terobjs/stockpile-rope')
+			ropeStockpiles.push(gobs[i]);
+	}
+	PBotUtils.sysMsg("Rope stockpiles currently chosen: " + ropeStockpiles.length);
+};
+
+const flaxBtn = () => {
+	PBotUtils.selectArea();
+	const gobs = PBotUtils.gobsInArea(PBotUtils.getSelectedAreaA(), PBotUtils.getSelectedAreaB());
+	for(let i=0; i<gobs.size(); i++) {
+		if(gobs[i].getResname() === 'gfx/terobjs/stockpile-flaxfibre' || gobs[i].getResname() === 'gfx/terobjs/stockpile-hempfibre')
+			flaxStockpiles.push(gobs[i]);
+	}
+	PBotUtils.sysMsg("Flax stockpiles currently chosen: " + flaxStockpiles.length);
+};
+
+const ropewalkBtn = () => {
+	PBotUtils.sysMsg("Please alt+click a Ropewalk!");
+	const selectedGob = PBotGobAPI.selectGob();
+	if(selectedGob.getResname() === 'gfx/terobjs/ropewalk') {
+		PBotUtils.sysMsg("Ropewalk selected!");
+		ropewalkGob = selectedGob;
+	} else {
+		PBotUtils.sysMsg("Selected gob was not a ropewalk!");
+	}
+};
+
+const startBtn = () => {
+	PBotUtils.sysMsg("Starting the ropemaker bot...");
+	if(!ropewalkGob) {
+		PBotUtils.sysMsg("Ropewalk not selected! Cancelling...");
+		return;
+	}
+	let stop = false;
+	while(!stop) {
+		if(shouldStop()) return;
+		const playerInv = PBotUtils.playerInventory();
+		if(flaxStockpiles.length === 0) {
+			PBotUtils.sysMsg("Ran out of flax stockpiles!");
+			break;
+		}
+		let flaxInInv = PBotUtils.playerInventory().getInventoryItemsByNames(['Flax Fibres','Hemp Fibres']).size();
+		while(PBotUtils.playerInventory().freeSlotsInv() > 0) {
+			if(shouldStop()) return;
+			if(flaxStockpiles.length === 0) {
+				// Out of flax stockpiles
+				break;
+			}
+			PBotUtils.pfRightClick(flaxStockpiles[0], 0);
+			PBotWindowAPI.waitForWindow("Stockpile");
+			const slots = PBotUtils.playerInventory().freeSlotsInv();
+			const flax = PBotWindowAPI.getStockpileUsedCapacity();
+			if(flax <= slots)
+				flaxStockpiles.shift();
+			PBotWindowAPI.takeItemsFromStockpile(Math.min(slots, flax));
+			flaxInInv += Math.min(slots, flax);
+			while(PBotUtils.playerInventory().freeSlotsInv() != Math.max(0, slots-flax)) {
+				PBotUtils.sleep(25);
+			}
+		}
+		if(Math.floor(flaxInInv/10) == 0) {
+			break;
+		}
+		PBotUtils.pfRightClick(ropewalkGob, 0);
+		while(!PBotGobAPI.player().getPoses().contains('gfx/borka/arms-bindle'))
+			PBotUtils.sleep(25);
+		if(!PBotUtils.drink(true)) {
+			PBotUtils.sysMsg("Ran out of water!");
+			return;
+		}
+
+		let ropeInInv = 0;
+		
+		if(PBotUtils.playerInventory().getInventoryItemsByNames(['Flax Fibres', 'Hemp Fibres']).size() > 5){
+			PBotUtils.craftItem("rope", 1);
+			ropeInInv = Math.floor(flaxInInv/10);
+		}	
+
+			
+//		PBotUtils.sysMsg("Crafting "+ropeInInv+" rope!");
+			
+		while(PBotUtils.playerInventory().getInventoryItemsByNames(['Rope']).size() != ropeInInv)
+			PBotUtils.sleep(1);
+		ropeMade += ropeInInv;
+		while(ropeInInv > 0) {
+			if(shouldStop()) return;
+			if(ropeStockpiles.length == 0) {
+				stop = true;
+				PBotUtils.sysMsg("Ran out of free rope stockpiles!");
+				break;
+			}
+			PBotUtils.pfRightClick(ropeStockpiles[0], 0);
+			PBotWindowAPI.waitForWindow("Stockpile");
+			const slots = PBotWindowAPI.getStockpileTotalCapacity();
+			const used = PBotWindowAPI.getStockpileUsedCapacity();
+			const count = Math.min(ropeInInv, slots-used);
+			PBotWindowAPI.putItemFromInventoryToStockpile(count);
+			if(count + used === slots)
+				ropeStockpiles.shift();
+			ropeInInv -= count;
+			while(PBotUtils.playerInventory().getInventoryItemsByNames(['rope']).size() != ropeInInv) {
+				PBotUtils.sleep(25);
+			}
+		}
+	}
+	PBotUtils.sysMsg("Rope maker bot finished! Made " + ropeMade + " rope in total!");
+
+};

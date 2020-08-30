@@ -1,0 +1,153 @@
+
+
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils");
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI");
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI");
+
+let stop = false;
+
+javaListToArray = (javalist) => {
+	const ret = [];
+	for(let i=0; i<javalist.size(); i++)
+		ret.push(javalist.get(i));
+	return ret;
+};
+
+// UI setting
+const title = "손으로 나무 심기 ver. 0.1  "
+
+let windowWidth = 190 // 타이틀에 따라 직접 설정한다 (최소 윈도우 너비)
+
+const buttonNumber = 1
+
+const buttonWidth = 100 // 버튼 한글 글자 하나당 20 정도 차지(스페이스바2 = 한글1), 한글 4자당 뒤에 스페이스바 하나 추가
+const buttonHeight = 20
+
+const outlineGap = 5
+let outlineWidthGap = outlineGap
+const buttonGap = 10
+
+const windowWidthConsideringButtonWidth = buttonWidth + outlineGap * 2
+
+if(windowWidth > windowWidthConsideringButtonWidth) {
+    windowWidth = windowWidth
+    outlineWidthGap = (windowWidth - buttonWidth) / 2
+} else {
+    windowWidth = windowWidthConsideringButtonWidth
+}
+
+windowHeight = buttonHeight * buttonNumber + outlineGap * 2 + buttonGap * (buttonNumber - 1)
+
+// 윈도우 세팅
+const window = PBotUtils.PBotWindow(title, windowHeight, windowWidth, ScriptID);
+
+// 버튼 세팅
+const gobResourcePrintButton = window.addButton("plantTrees", "나무 심기 ", buttonWidth, outlineWidthGap, outlineGap);
+
+// 기타 상수
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+const lengthOfSideOfATile = 11
+const petalMenuWantToChoose = "Plant tree"
+
+// 나무 심기 버튼을 누르면 실행
+const plantTrees = () => {
+	const stockpilePossibleLocations = [];
+    let stockpileLocation;
+
+	PBotUtils.sysMsg(cuttingLine);
+	PBotUtils.sysMsg("[" + title + " 가동!]");
+
+    // 삽을 장착하지 않았다면 빠꾸야!
+    if(!PBotGobAPI.player().getPoses().contains("gfx/borka/arms-shovelshoulders")
+        && !PBotGobAPI.player().getPoses().contains("gfx/borka/arms-shovelgrip")) {
+        PBotUtils.sysMsg("삽을 먼저 장착하고 다시 실행해주세요!");
+        PBotUtils.sysMsg("[" + title + " 종료!]");
+        PBotUtils.sysMsg(cuttingLine);
+        return;
+    }
+
+	PBotUtils.sysMsg("심고 싶은 나무 씨앗을 인벤토리에서 선택해주세요!");
+
+	const selectedItem = PBotUtils.selectItem();
+    
+
+	const items = javaListToArray(PBotUtils.playerInventory().getInventoryItemsByResnames([selectedItem.getResname()]));
+
+
+	PBotUtils.sysMsg("나무를 심을 빈영역을 드래그로 선택해주세요!");
+
+	PBotUtils.selectArea();
+
+	const northWestPoint = PBotUtils.getSelectedAreaA();
+	const southEastPoint = PBotUtils.getSelectedAreaB();
+
+	for(let yCoordinate = northWestPoint.y + lengthOfSideOfATile / 2; yCoordinate < southEastPoint.y; yCoordinate += lengthOfSideOfATile) {
+		for(let xCoordinate = northWestPoint.x + lengthOfSideOfATile / 2; xCoordinate < southEastPoint.x; xCoordinate += lengthOfSideOfATile) {
+			stockpilePossibleLocations.push({x: xCoordinate, y: yCoordinate});
+		}
+	}
+
+    stockpileLocation = stockpilePossibleLocations.shift()
+    PBotUtils.pfLeftClick(stockpileLocation.x - 11, stockpileLocation.y);
+
+    while(items.length > 0) {
+        const item = items.shift();
+
+        while(!PBotUtils.pfLeftClick(stockpileLocation.x, stockpileLocation.y)) {
+            // 매크로를 중지할까 결정하는 부분
+            if(stop) {
+                break
+            } else if(window.closed()) {
+                PBotUtils.sysMsg("[윈도우가 닫혀서 " + title + "을 종료합니다!]");
+                PBotUtils.sysMsg(cuttingLine);
+                return;	// 윈도우가 닫혔는지 검사한다.
+            }
+
+            PBotUtils.sysMsg("나무를 심을 위치로의 길찾기를 실패했어요!");
+            PBotUtils.sysMsg("나무를 심을 다음 위치로 넘어갑니다.");
+
+            if (stockpilePossibleLocations.length > 0) {
+                stockpileLocation = stockpilePossibleLocations.shift();
+            } else {
+                PBotUtils.sysMsg("더 이상 스톡파일을 만들 공간이 없어요.");
+                PBotUtils.sysMsg("[" + title + " 종료!]");
+                PBotUtils.sysMsg(cuttingLine);
+                return;	// 나무를 심을 위치가 더 이상 존재하지 않을 때
+            }
+        }
+
+        if(PBotUtils.getItemAtHand() == null) {
+            item.takeItem();
+            while(PBotUtils.getItemAtHand() == null) PBotUtils.sleep(15);
+        }
+
+        PBotUtils.mapInteractClick
+        
+		PBotUtils.waitForFlowerMenu()
+                
+        if(!PBotUtils.choosePetal(petalMenuWantToChoose)) {
+            PBotUtils.sysMsg("플라워 메뉴를 선택할 수가 없어요!");
+            PBotUtils.sysMsg("[" + title + " 종료!]");
+            PBotUtils.sysMsg(cuttingLine);
+            return;
+        } else {
+            PBotUtils.sysMsg("나무를 심어요.");
+
+            PBotUtils.waitForHourglass();
+
+            PBotUtils.sysMsg("모래시계가 끝난걸 감지했어요.");
+
+            if (stockpilePossibleLocations.length > 0) {
+                stockpileLocation = stockpilePossibleLocations.shift();
+            } else {
+                PBotUtils.sysMsg("더 이상 스톡파일을 만들 공간이 없어요.");
+                PBotUtils.sysMsg("[" + title + " 종료!]");
+                PBotUtils.sysMsg(cuttingLine);
+                return;	// 나무를 심을 위치가 더 이상 존재하지 않을 때
+            }
+        }
+    }
+
+	PBotUtils.sysMsg("[" + title + " 완료!]");
+	PBotUtils.sysMsg(cuttingLine);
+}

@@ -1,0 +1,479 @@
+//
+// Dream Catcher ver. 0.3
+// made by Lieman 2019/05/05
+//
+// 드림캐쳐에서 드림을 따서 보관함에 넣는 프로그램
+// 매크로 창을 닫아서 매크로를 종료할 수 있어요
+//
+// 대상 : 드림캐쳐
+//
+// 사용 방법
+// 1. 드림캐쳐가 있는 영역을 드래그하여 지정한다
+// 2. 얻은 드림을 보관할 보관함이 존재하는 영역을 드래그하여 지정한다
+//
+// 추가 기능
+//      - 무한 모드 : 작업 완료시 매크로를 종료하지 않고 30분을 기다린 후 다시 처음부터 돌아가요
+//                  (지정된 드림 캐쳐, 보관함을 처음부터 다시 확인함)
+//      - 여고생쨩 : 꼭 필요한 텍스트 외에 프로그램이 어떤 행동을 하는지 확인할 수 있는
+//                  플레이버 텍스트를 켤 수 있습니다
+//                  언제라도 체크하면 플레이버 텍스트를 출력하기 시작하고
+//                  언제라도 체크를 해제하면 플레이버 텍스트를 출력하지 않습니다
+//
+// 주의사항
+// 1. 이 프로그램은 플라워 메뉴 자동 선택 기능을 켰다고 가정하고 짜여져 있어요
+//      따라서 프로그램 동작을 위해 옵션의 메뉴 세팅에서 'Harvest'를 체크해주세요
+// 2. 드림 캐쳐와 보관함은 원활한 패스파인딩을 위하여
+//		가급적 한 타일에 두 개 이상 두지 않을 것
+// 3. 패스파인딩 특성상 동굴 벽이나 집 벽에서 패스파인딩이 제대로 되지 않을 수 있습니다
+//      (벽이 아니라 길로 인식하는듯 함)
+// 4. 보관함은 스트롱박스를 제외한 모든 보관함을 인식할 수 있어요
+//
+// 생각해볼점
+// 패스파인딩에 실패했을 때 이를 인지할 방법이 존재하지 않는다
+// 무한모드를 대기할 때 처음 시작위치로 가서 대기하게 하는건 어떨가?
+//
+// 용어 설명
+// 1. 채집 대상(toCollect)으로부터 아이템(targetItem)을 채집(collect)하는 프로그램
+//
+
+
+
+
+
+// MARK:- 기본 세팅
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils");
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI");
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI");
+
+function javaListToArray(javalist) {
+	const ret = []
+	for(let i = 0; i < javalist.length; i++) {
+		ret.push(javalist.get(i))
+    }
+	return ret
+};
+
+
+
+
+
+// MARK:- UI setting
+const title = "Dream Catcher ver. 0.3  "
+
+let windowWidth = 190 // 타이틀에 따라 직접 설정한다 (최소 윈도우 너비)
+
+const buttonNumber = 1
+
+const buttonWidth = 80 // 버튼 한글 글자 하나당 20 정도 차지(스페이스바2 = 한글1), 한글 4자당 뒤에 스페이스바 하나 추가
+const buttonHeight = 20
+
+const outlineGap = 5
+let outlineWidthGap = outlineGap
+const buttonGap = 10
+const heightOfCheckBox = 15
+const gapBetweenCheckBoxAndButton = 10
+
+const windowWidthConsideringButtonWidth = buttonWidth + outlineGap * 2
+
+if(windowWidth > windowWidthConsideringButtonWidth) {
+    outlineWidthGap = (windowWidth - buttonWidth) / 2
+} else {
+    windowWidth = windowWidthConsideringButtonWidth
+}
+
+windowHeight = buttonHeight * buttonNumber + outlineGap * 2 + buttonGap * (buttonNumber - 1) + heightOfCheckBox + gapBetweenCheckBoxAndButton
+
+// 윈도우 세팅
+const window = PBotUtils.PBotWindow(title, windowHeight, windowWidth, ScriptID)
+
+// 버튼 세팅
+const infiniteModeCheckBox = window.addCheckbox("infiniteModeChecked", "무한 모드", false, 5, outlineGap)
+const flavorTextCheckBox = window.addCheckbox("flavorText", "여고생쨩", false, 100, outlineGap)
+
+const mainLoopButton = window.addButton("mainLoop", "꿈 따기 ", buttonWidth, outlineWidthGap, outlineGap + gapBetweenCheckBoxAndButton + heightOfCheckBox)
+
+
+
+
+
+// MARK:- 기타 상수
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+const windowClosedMessage = "매크로 창을 닫아 매크로를 종료합니다."
+
+const selectToCollectAreaMessage = "꿈을 채집할 드림캐쳐가 있는 영역을 드래그해주세요."
+const noGobToCollectMessage = "거기엔 드림캐쳐가 없어요."
+
+const selectContainerAreaMessage = "수확한 꿈을 넣을 보관함이 있는 영역을 드래그해주세요."
+const noGobOfContainerMessage = "거기엔 보관함이 없어요."
+
+const noLeftGobOfContainerMessage = "빈 보관함이 없어요."
+
+
+
+
+
+// MARK: - 엘리멘트 클레스
+//
+class ElementOfItem {
+	constructor(
+		name,
+		resourceName
+	) {
+		this.name = name
+		this.resourceName = resourceName
+	}
+}
+
+class ElementOfGob {
+	constructor(
+		name,
+		resourceName
+	) {
+		this.name = name
+		this.resourceName = resourceName
+	}
+}
+
+
+
+
+
+// MARK: - 딕셔너리
+// key와 name은 툴팁 이름 기준으로
+//
+const itemDictionaryOfDream = {
+	aBeautifulDream: new ElementOfItem(
+		"A Beautiful Dream",
+		"gfx/invobjs/dream"
+		)
+}
+
+const gobDictionaryOfDreamCatcher = {
+	dreamCatcher: new ElementOfGob(
+		"Dream Chatcher",
+		"gfx/terobjs/dreca"
+		)
+}
+
+const gobDictionaryOfContainer = {
+	birchbarkBasket: new ElementOfGob(
+		"Birchbark Basket",
+		"gfx/terobjs/birchbasket"
+		),
+	boneChest: new ElementOfGob(
+		"Bone Chest",
+		"gfx/terobjs/bonechest"
+		),
+	coffer: new ElementOfGob(
+		"Coffer",
+		"gfx/terobjs/coffer"
+		),
+	crate: new ElementOfGob(
+		"Crate",
+		"gfx/terobjs/crate"
+		),
+	cupboard: new ElementOfGob(
+		"Cupboard",
+		"gfx/terobjs/cupboard"
+		),
+	exquisiteChest: new ElementOfGob(
+		"Exquisite Chest",
+		"gfx/terobjs/exquisitechest"
+		),
+	largeChest: new ElementOfGob(
+		"Large Chest",
+		"gfx/terobjs/largechest"
+		),
+	linenCrate: new ElementOfGob(
+		"Linen Crate",
+		"gfx/terobjs/linencrate"
+		),
+	metalCabinet: new ElementOfGob(
+		"Metal Cabinet",
+		"gfx/terobjs/metalcabinet"
+		),
+	stoneCasket: new ElementOfGob(
+		"Stone Casket",
+		"gfx/terobjs/stonecasket"
+		),
+	strawBasket: new ElementOfGob(
+		"Straw Basket",
+		"gfx/terobjs/strawbasket"
+		),
+	wickerBasket: new ElementOfGob(
+		"Wicker Basket",
+		"gfx/terobjs/wbasket"
+		),
+	woodenBox: new ElementOfGob(
+		"Wooden Box",
+		"gfx/terobjs/woodbox"
+		),
+	woodenChest: new ElementOfGob(
+		"Wooden Chest",
+		"gfx/terobjs/chest"
+		)
+}
+
+
+
+
+
+// MARK:- 함수 구현부
+// 사일런트모드에 따른 메세지 출력 함수
+//
+function printMessage(message, shouldPrint) {
+    if(shouldPrint) {
+        PBotUtils.sysMsg(message)
+    }
+}
+
+// 프로그램이 시작할 때 호출
+//
+function printStartMessage() {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[" + title + " 가동!]")
+}
+
+// 프로그램이 정상 작동 종료될 때 호출
+//
+function printCompleteMessage() {
+    PBotUtils.sysMsg("[" + title + " 완료!]")
+    PBotUtils.sysMsg(cuttingLine)
+	window.closeWindow();
+}
+
+// 프로그램이 비정상 작동 종료될 때 호출
+//
+function printTerminateMessageWithErrorMessage(errorMessage) {
+	PBotUtils.sysMsg(errorMessage)
+    PBotUtils.sysMsg("[" + title + " 종료!]")
+    PBotUtils.sysMsg(cuttingLine)
+
+    if(!window.closed()) {
+        window.closeWindow();
+    }
+}
+
+// output   : [PBotItem] targetItemsInPlayerInventory
+// 주석     : 드림 전용 함수로 바꿨다
+//            인벤토리의 드림들을 반환
+//
+function targetItemsInPlayerInventory() {
+	const itemsInPlayerInventory = javaListToArray(PBotUtils.playerInventory().getInventoryContents())
+	const targetItemsInPlayerInventory = itemsInPlayerInventory.filter(item => item.getResname().includes(itemDictionaryOfDream.aBeautifulDream.resourceName))
+
+    return targetItemsInPlayerInventory
+}
+
+// 선택된 영역 내에서 category에 속하는 [gob]을 출력
+// input	: ([element] categoryDictionary)
+// output	: [gob] gobsBelongToCategory
+//
+function gobsBelongToCategory(categoryDictionary) {
+	PBotUtils.selectArea()
+
+    const locationA = PBotUtils.getSelectedAreaA()
+    const locationB = PBotUtils.getSelectedAreaB()
+
+	const gobsAtSelectedArea = javaListToArray(PBotUtils.gobsInArea(locationA, locationB))
+
+	let gobsBelongToCategory = gobsAtSelectedArea.filter(
+		(gob) => {
+            for(let key in categoryDictionary) {
+                if(gob.getResname().includes(categoryDictionary[key].resourceName)) {
+                    return true
+                }
+            }
+
+            return false
+		}
+	)
+
+	return gobsBelongToCategory
+}
+
+
+
+
+
+// MARK:- mainLoop
+function infiniteModeChecked() {
+}
+
+function flavorText(isChecked) {
+    if(isChecked) {
+        PBotUtils.sysMsg("하와와...")
+    } else {
+        PBotUtils.sysMsg("...")
+    }
+}
+
+function mainLoop() {
+    let errorMessage
+
+    let gobToCollect
+    let stackOfGobsToCollect
+
+    let gobOfContainer
+    let stackOfGobsOfContainer
+
+    let amountOfHarvestingcurrentDreamcatcher = 0
+
+    
+    printStartMessage()
+
+	PBotUtils.sysMsg(selectToCollectAreaMessage)
+
+	let gobsToCollect = gobsBelongToCategory(gobDictionaryOfDreamCatcher)
+
+	if (gobsToCollect.length == 0) {
+        errorMessage = noGobToCollectMessage
+		printTerminateMessageWithErrorMessage(errorMessage)
+		return
+	} else if (window.closed()) {
+        errorMessage = windowClosedMessage
+		printTerminateMessageWithErrorMessage(errorMessage)
+		return
+	}
+
+    PBotUtils.sysMsg(gobsToCollect.length + "개의 드림 캐쳐를 발견했어요.")
+
+	PBotUtils.sysMsg(selectContainerAreaMessage)
+
+	const gobsOfContainer = gobsBelongToCategory(gobDictionaryOfContainer)
+
+	if (gobsOfContainer.length == 0) {
+		printTerminateMessageWithErrorMessage(noGobOfContainerMessage)
+		return
+	} else if (window.closed()) {
+        errorMessage = windowClosedMessage
+		printTerminateMessageWithErrorMessage(errorMessage)
+		return
+	}
+
+	for(let i = 0; i < gobsOfContainer.length; i++) {
+		gobsOfContainer[i].addGobText("보관함" + (i + 1), 0)
+	}
+
+    PBotUtils.sysMsg(gobsOfContainer.length + "개의 보관함을 발견했어요.")
+    
+
+
+    // if(infiniteModeCheckBox.getValue())면 반복
+    while(true) {
+        if(window.closed()) {
+            printTerminateMessageWithErrorMessage(windowClosedMessage)
+            return
+        }
+
+        stackOfGobsToCollect = gobsToCollect
+        gobsToCollect = []
+        gobToCollect = stackOfGobsToCollect.shift()
+        gobsToCollect.push(gobToCollect)
+
+        stackOfGobsOfContainer = gobsOfContainer
+        gobOfContainer = stackOfGobsOfContainer.shift()
+
+        // gobToCollect가 있으면 반복
+        while(true) {
+            printMessage("꿈을 수확하는 거시야요...", flavorTextCheckBox.getValue())
+
+            // 손에 아이템이 있거나, 드림을 2번 수확하고 다음 드림캐쳐가 없을 때까지 반복
+            while(true) {
+                if(window.closed()) {
+                    printTerminateMessageWithErrorMessage(windowClosedMessage)
+                    return
+                }
+
+                gobToCollect.pfClick(3, 0)
+                PBotUtils.sleep(1000)
+                
+                if(PBotUtils.getItemAtHand() != null) {
+                    PBotUtils.dropItemFromHand(0)
+                }
+
+                amountOfHarvestingcurrentDreamcatcher++
+                
+                if(amountOfHarvestingcurrentDreamcatcher == 2) {
+                    amountOfHarvestingcurrentDreamcatcher = 0
+
+                    if(stackOfGobsToCollect.length != 0) {
+                        gobToCollect = stackOfGobsToCollect.shift()
+                        gobsToCollect.push(gobToCollect)
+                    } else {
+                        gobToCollect = null
+                        break
+                    }
+                }
+
+                if(PBotUtils.playerInventory().freeSlotsInv() == 0) {
+                    break
+                }
+            }
+            
+            printMessage("수확한 꿈을 보관하는 거시야요...", flavorTextCheckBox.getValue())
+
+            // 보관함이 가득 차지 않았는데, 손에 아이템이 없고, 인벤토리 아이템이 보관함의 빈칸보다 적으면 탈출
+            while(true) {
+                if(window.closed()) {
+                    printTerminateMessageWithErrorMessage(windowClosedMessage)
+                    return
+                }
+
+                gobOfContainer.pfClick(3, 0)
+                
+                // 새로운 인벤토리가 열릴때까지 기다린다
+                while(PBotUtils.getAllInventories().length == 1) {
+                    if(window.closed()) {
+                        printTerminateMessageWithErrorMessage(windowClosedMessage)
+                        return
+                    }
+
+                    PBotUtils.sleep(500)
+                }
+
+                const containerInventory = PBotUtils.getAllInventories()[0]
+                const freeSlotsOfContainerInventory = containerInventory.freeSlotsInv()
+                
+                if(freeSlotsOfContainerInventory != 0) {
+                    const stackOfTargetItemsInPlayerInventory = targetItemsInPlayerInventory()
+                    const amountOfTargetItemInPlayerInventory = stackOfTargetItemsInPlayerInventory.length
+
+                    if(amountOfTargetItemInPlayerInventory > freeSlotsOfContainerInventory) {
+                        for(let i = 0; i < freeSlotsOfContainerInventory; i++) {
+                            stackOfTargetItemsInPlayerInventory[i].transferItem()
+                        }
+                    } else {
+                        for(let i = 0; i < amountOfTargetItemInPlayerInventory; i++) {
+                            stackOfTargetItemsInPlayerInventory[i].transferItem()
+                        }
+
+                        break
+                    }
+                }
+
+                printMessage("보관함이 가득 찬 거시야요...", flavorTextCheckBox.getValue())
+
+                if(stackOfGobsOfContainer.length != 0) {
+                    gobOfContainer = stackOfGobsOfContainer.shift()
+                } else {
+                    printTerminateMessageWithErrorMessage(noLeftGobOfContainerMessage)
+                    return
+                }
+            }
+
+            if(gobToCollect == null) {
+                break
+            }
+        }
+        
+        if(infiniteModeCheckBox.getValue()) {
+            printMessage("다음 수확 시기까지 기다리는 거시야요...", flavorTextCheckBox.getValue())
+            PBotUtils.sleep(1800000)
+        } else {
+            break
+        }
+    }
+
+    printCompleteMessage()
+}

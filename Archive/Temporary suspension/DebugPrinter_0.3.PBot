@@ -1,0 +1,138 @@
+//********************************
+// Title: DebugPrinter_0.3
+// made by Lieman at 2020.04.07
+//
+// short description:
+// 각종 리소스 데이터를 출력합니다
+//********************************
+
+// UI constant setting
+    // button UI (button == table view cell)
+        // size
+            const buttonWidth = 140
+            const buttonHeight = 20
+
+        const buttonNumber = 5
+
+
+    // window UI (window == table view)
+        const title = "리소스 데이터 출력기 ver. 0.3  "
+        const windowSpace = 10
+
+        // margin
+            const windowTopMargin = 10
+            const windowLeftMargin =  10
+            const windowRightMargin = 10
+            const windowBottomMargin = 10
+
+
+// calculate size and make button
+const windowWidth = windowLeftMargin + buttonWidth + windowRightMargin
+const windowHeight = windowTopMargin + (buttonHeight * buttonNumber + windowSpace * (buttonNumber - 1)) + windowBottomMargin
+
+const gobResourcePrintButton = window.addButton("gobResourcePrint", "gob", buttonWidth, windowLeftMargin, windowTopMargin)
+const itemResourcePrintButton = window.addButton("itemResourcePrint", "아이템 ", buttonWidth, windowLeftMargin, windowTopMargin + (buttonHeight + tableViewSpace) * 1)
+const playerPoseResourcePrintButton = window.addButton("playerPosesResourcePrint", "플레이어 포즈들  ", buttonWidth, windowLeftMargin, windowTopMargin + (buttonHeight + tableViewSpace) * 2)
+const printDistanceOfGapButton = window.addButton("printDistanceOfGap", "물체 거리 출력  ", buttonWidth, windowLeftMargin, windowTopMargin + (buttonHeight + tableViewSpace) * 3)
+const printPositionOfGobButton = window.addButton("printPositionOfGob", "물체 위치 출력  ", buttonWidth, windowLeftMargin, windowTopMargin + (buttonHeight + tableViewSpace) * 4)
+
+
+// make window
+    const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+    const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+    const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI")
+    const window = PBotUtils.PBotWindow(title, windowHeight, windowWidth, ScriptID)
+
+
+// etc constant setting
+    const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+
+
+// etc variable setting
+    let stop = false
+
+const shouldStop = () => {
+	return (stop || window.closed())
+}
+
+javaListToArray = (javalist) => {
+	const ret = []
+	for(let i=0; i<javalist.size(); i++)
+		ret.push(javalist.get(i))
+	return ret
+}
+
+const gobResourcePrint = () => {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 시작!]")
+	PBotUtils.sysMsg("리소스를 찾을 gob을 alt 클릭 해주세요.")
+
+	let gob = PBotGobAPI.selectGob()
+
+	PBotUtils.sysMsg("리소스 이름 : " + gob.getResname())
+	PBotUtils.sysMsg("포즈들 리소스 이름 : " + gob.getPoses())
+	PBotUtils.sysMsg("gob id : " + gob.getGobId())
+
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 완료!]")
+	PBotUtils.sysMsg(cuttingLine)
+}
+
+const itemResourcePrint = () => {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[아이템 리소스 이름 출력 시작!]")
+	PBotUtils.sysMsg("인벤토리에서 리소스 이름을 찾을 아이템을 선택해주세요.")
+
+	const selectedItem = PBotUtils.selectItem()
+
+	PBotUtils.sysMsg("아이템 이름 : " + selectedItem.getName())
+	PBotUtils.sysMsg("아이템 리소스 이름 : " + selectedItem.getResname())
+	PBotUtils.sysMsg("아이템 컨텐츠 : " + selectedItem.getContents())
+	PBotUtils.sysMsg("아이템 이름/리소스 이름 : " + selectedItem.getName() + "/" + selectedItem.getResname())
+
+	PBotUtils.sysMsg("[아이템 리소스 이름 출력 완료!]")
+	PBotUtils.sysMsg(cuttingLine)
+}
+
+const playerPosesResourcePrint = () => {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[플레이어 포즈들 리소스 이름 출력 시작!]")
+    
+	PBotUtils.sysMsg("플레이어 포즈들 리소스 이름 : " + PBotGobAPI.player().getPoses())
+
+	PBotUtils.sysMsg("[플레이어 포즈들 리소스 이름 출력 완료!]")
+	PBotUtils.sysMsg(cuttingLine)
+}
+
+function printDistanceOfGap() {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 시작!]")
+	PBotUtils.sysMsg("떨어진 거리를 측정할 gob들이 있는 영역을 선택해주세요.")
+
+	PBotUtils.selectArea()
+
+	let gobs = javaListToArray(PBotUtils.gobsInArea(PBotUtils.getSelectedAreaA(), PBotUtils.getSelectedAreaB()))
+
+	const xDistance = gobs[0].getRcCoords().x - gobs[1].getRcCoords().x
+	const yDistance = gobs[0].getRcCoords().y - gobs[1].getRcCoords().y
+
+	const distance = Math.sqrt(Math.pow(xDistance, 2) + Math.pow(yDistance, 2))
+
+	PBotUtils.sysMsg("떨어진 거리 : " + distance)
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 완료!]")
+	PBotUtils.sysMsg(cuttingLine)
+}
+
+function printPositionOfGob() {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 시작!]")
+	PBotUtils.sysMsg("리소스를 찾을 gob을 alt 클릭 해주세요.")
+
+	let gob = PBotGobAPI.selectGob()
+
+	PBotUtils.sysMsg("리소스 이름 : " + gob.getResname())
+	PBotUtils.sysMsg("위치 : (" + gob.getRcCoords().x + ", " + gob.getRcCoords().y + ")")
+	PBotUtils.sysMsg("gob id : " + gob.getGobId())
+
+	PBotUtils.sysMsg("[gob 리소스 이름 출력 완료!]")
+	PBotUtils.sysMsg(cuttingLine)
+}

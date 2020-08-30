@@ -1,0 +1,354 @@
+// Lieman이 짬뽕하여 만든 매크로입니다 흐흐..
+// 채집 스톡 ver. 0.3
+//
+// 채집 대상 : 목탄, 뽕잎, 라우렐, 찻잎
+//
+// 1. 채집할 오브젝트가 있는 영역을 선택한다.
+// 2. 채집한 아이템을 스톡파일로 쌓아둘 빈영역을 선택한다.
+//
+// 스톡파일 배치 순서 : 맨 윗줄 왼쪽에서 오른쪽으로, 그리고 아랫줄 왼쪽으로
+
+// WindowUI setting
+const title = "채집 스톡 ver. 0.3  "
+const buttonSize = 130
+const buttonNumber = 1
+const windowSize = buttonSize * buttonNumber + 10
+
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI")
+const window = PBotUtils.PBotWindow(title, 30, windowSize, ScriptID)
+
+const startButton = window.addButton("operateBot", "Start", buttonSize, 5, 5)
+
+let stop = false
+
+const shouldStop = () => {
+	return (stop || window.closed());
+}
+
+javaListToArray = (javalist) => {
+	const ret = [];
+	for(let i=0; i<javalist.length; i++)
+		ret.push(javalist.get(i));
+	return ret;
+}
+
+// 커스텀 시작
+
+const resourceNameOfTarkiln = "gfx/terobjs/tarkiln"
+const resourceNameOfMulberry = "gfx/terobjs/trees/mulberry"
+const resourceNameOfLaurel = "gfx/terobjs/trees/laurel"
+const resourceNameOfTeaBush = "gfx/terobjs/bushes/teabush"
+
+const petalMenuOfCollectCoal = "Collect coal"
+const petalMenuOfPickLeaf = "Pick leaf"
+
+const resourceNameOfCoal = "gfx/invobjs/coal"
+const resourceNameOfMulberryLeaf = "gfx/invobjs/leaf-mulberrytree"
+const resourceNameOfLaurelLeaf = "gfx/invobjs/leaf-laurel"
+const resourceNameOfTeaLeaves = "gfx/invobjs/tea-fresh"
+
+const resourceNameOfCoalStockpile = "gfx/terobjs/stockpile-coal"
+const resourceNameOfLeafStockpile = "gfx/terobjs/stockpile-leaf"
+
+const lengthOfSideOfATile = 11
+
+const gobResourceName1 = resourceNameOfTarkiln
+const gobResourceName2 = resourceNameOfMulberry
+const gobResourceName3 = resourceNameOfLaurel
+const gobResourceName4 = resourceNameOfTeaBush
+
+let targetGobResourceName
+let petalMenuWantToChoose
+
+
+const itemResourcesToMakeStockpile = []
+const resourceNamesOfStockpile = []
+
+let gobName = "대상"
+let itemName = "아이템"
+
+// 위 상수 사용 예시
+// gob.getResname() == gobResourceName
+// PBotUtils.choosePetal(petalMenuWantToChoose)
+// let items = javaListToArray(PBotUtils.playerInventory().getInventoryItemsByResnames(itemResourcesToMakeStockpile));
+// stockpile = PBotGobAPI.findGobByNames(1000, resourceNamesOfStockpile);
+
+// 메인 함수
+const operateBot = () => {
+	let gobs;
+	let gob;
+	const stockpilePossibleLocations = [];
+	let stockpile
+	let stockpileLocation
+
+	startButton.destroy();
+	PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+	PBotUtils.sysMsg("[" + title + " 가동!]");
+	PBotUtils.sysMsg("채집할 대상이 존재하는 영역을 선택해주세요.");
+
+	PBotUtils.selectArea();
+
+	gobs = javaListToArray(PBotUtils.gobsInArea(PBotUtils.getSelectedAreaA(), PBotUtils.getSelectedAreaB()));
+	gobs = gobs.filter(gob => gob.getResname() == gobResourceName1
+							  || gob.getResname() == gobResourceName2
+							  || gob.getResname() == gobResourceName3
+							  || gob.getResname() == gobResourceName4)
+
+	// 채집 스톡할 대상 세팅
+	if (gobs.length > 0) {
+		if(gobs[0].getResname() == gobResourceName1) {
+			gobs = gobs.filter((gob) => {
+				return gob.getResname() == gobResourceName1;
+			});
+			petalMenuWantToChoose = petalMenuOfCollectCoal;
+			itemResourcesToMakeStockpile.push(resourceNameOfCoal);
+			resourceNamesOfStockpile.push(resourceNameOfCoalStockpile);
+			gobName = "타르 가마";
+			itemName = "목탄";
+		} else if(gobs[0].getResname() == gobResourceName2) {
+			gobs = gobs.filter((gob) => {
+				return gob.getResname() == gobResourceName2;
+			});
+			petalMenuWantToChoose = petalMenuOfPickLeaf;
+			itemResourcesToMakeStockpile.push(resourceNameOfMulberryLeaf);
+			resourceNamesOfStockpile.push(resourceNameOfLeafStockpile);
+			gobName = "뽕나무";
+			itemName = "뽕잎";
+		} else if(gobs[0].getResname() == gobResourceName3) {
+			gobs = gobs.filter((gob) => {
+				return gob.getResname() == gobResourceName3;
+			});
+			petalMenuWantToChoose = petalMenuOfPickLeaf;
+			itemResourcesToMakeStockpile.push(resourceNameOfLaurelLeaf);
+			resourceNamesOfStockpile.push(resourceNameOfLeafStockpile);
+			gobName = "월계수";
+			itemName = "월계수잎";
+		} else if(gobs[0].getResname() == gobResourceName4) {
+			gobs = gobs.filter((gob) => {
+				return gob.getResname() == gobResourceName4;
+			});
+			petalMenuWantToChoose = petalMenuOfPickLeaf;
+			itemResourcesToMakeStockpile.push(resourceNameOfTeaLeaves);
+			resourceNamesOfStockpile.push(resourceNameOfLeafStockpile);
+			gobName = "차나무";
+			itemName = "찻잎";
+		}
+	}
+
+	if(gobs.length == 0) {
+		stop = true;
+	}
+
+	PBotUtils.sysMsg(gobs.length + "개의 " + gobName + "을 발견했어요.");
+
+	if(window.closed()) {
+		PBotUtils.sysMsg("[윈도우가 닫혀서 " + title + "을 종료합니다!]");
+		PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+		return;	// 윈도우가 닫혔는지 검사한다.
+	}
+
+	PBotUtils.sysMsg("채집한 아이템을 스톡파일로 쌓아둘 빈 영역을 선택해주세요.");
+
+	PBotUtils.selectArea();
+
+	const northWestPoint = PBotUtils.getSelectedAreaA();
+	const southEastPoint = PBotUtils.getSelectedAreaB();
+
+	for(let yCoordinate = northWestPoint.y + lengthOfSideOfATile / 2; yCoordinate < southEastPoint.y; yCoordinate += lengthOfSideOfATile) {
+		for(let xCoordinate = northWestPoint.x + lengthOfSideOfATile / 2; xCoordinate < southEastPoint.x; xCoordinate += lengthOfSideOfATile) {
+			stockpilePossibleLocations.push({x: xCoordinate, y: yCoordinate});
+		}
+	}
+
+	gob = gobs.shift();
+
+	while(true) {
+		if(stop) {
+			break
+		} else if(window.closed()) {
+			PBotUtils.sysMsg("[윈도우가 닫혀서 " + title + "을 종료합니다!]");
+			PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+			return;	// 윈도우가 닫혔는지 검사한다.
+		}
+
+		gob.pfClick(3, 0);
+
+		if(gob.getResname() != gobResourceName1) {
+			PBotUtils.waitForFlowerMenu();
+		} else {
+			PBotUtils.sleep(1000);
+			// 플라워 메뉴 열리는걸 기다리는 딜레이
+			// wait를 쓸 수 없는 이유는, 타르 가마에 목탄이 다 빠지면 플라워 메뉴가 열리지 않기 때문에 오류
+		}
+
+		while(PBotUtils.getItemAtHand() != null) {
+			if(stop) {
+				break
+			} else if(window.closed()) {
+				PBotUtils.sysMsg("[윈도우가 닫혀서 " + title + "을 종료합니다!]");
+				PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+				return;	// 윈도우가 닫혔는지 검사한다.
+			}
+
+			// gob의 아이템 채집이 끝나면 다음 gob으로 넘어간다
+			// 다음 gob이 없으면 stop을 true로 하고 스톡파일에 넣은 후 종료하도록 한다
+			if(!PBotUtils.choosePetal(petalMenuWantToChoose)) {
+				PBotUtils.sysMsg("이 " + gobName +"에는 더 이상 " + itemName + "이 없어요.");
+				if(gob.getResname() != gobResourceName1) {
+					PBotUtils.closeFlowermenu();
+				}
+
+				if(gobs.length > 0) {
+					gob = gobs.shift();
+				} else {
+					PBotUtils.sysMsg("더 채집할 " + gobName + "도 없네요.");
+					stop = true
+					break;
+				}
+			} else {
+				PBotUtils.sysMsg("남은 아이템을 채집해요.");
+
+				PBotUtils.waitForHourglass();
+
+				PBotUtils.sysMsg("모래시계가 끝난걸 감지했어요.");
+			}
+
+			gob.pfClick(1, 0);
+
+			PBotUtils.sleep(500);	// 움직임 및 손에 아이템이 있는지 확인 전 딜레이
+
+			if(PBotUtils.getItemAtHand() != null) {
+				PBotUtils.sysMsg(itemName + "을 스톡파일에 넣어야겠어요.");
+				break;
+			}
+
+			gob.doClick(3, 0);
+
+			if(gob.getResname() != gobResourceName1) {
+				PBotUtils.waitForFlowerMenu();
+			} else {
+				PBotUtils.sleep(1000);
+				// 플라워 메뉴 열리는걸 기다리는 딜레이
+				// wait를 쓸 수 없는 이유는, 타르 가마에 목탄이 다 빠지면 플라워 메뉴가 열리지 않기 때문에 오류
+			}
+		}
+
+		let items = javaListToArray(PBotUtils.playerInventory().getInventoryItemsByResnames(itemResourcesToMakeStockpile));
+		let amountOfItem = items.length;
+
+		while(amountOfItem > 0) {
+			if(stop) {
+				break
+			} else if(window.closed()) {
+				PBotUtils.sysMsg("[윈도우가 닫혀서 " + title + "을 종료합니다!]");
+				PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+				return;	// 윈도우가 닫혔는지 검사한다.
+			}
+
+			if(stockpile == null) {
+				PBotUtils.sysMsg("새로운 스톡파일을 만들어요.");
+
+				if(stockpilePossibleLocations.length > 0) {
+					stockpileLocation = stockpilePossibleLocations.shift();
+				} else {
+						PBotUtils.sysMsg("더 이상 스톡파일을 만들 공간이 없어요.");
+						PBotUtils.sysMsg("[" + title + " 종료!]");
+						PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+						return;	// 스톡파일 만들 위치가 더 이상 존재하지 않을 때
+				}
+
+				PBotUtils.sleep(1000);
+				// 모래시계가 끝나고 바로 아이템을 집어 스톡파일을 만들면
+				// 손에 스톡파일과 아이템이 동시에 존재게 되는 오류가 날 수 있기 때문에
+				// 슬립을 조금 넣어준다.
+
+				if(PBotUtils.getItemAtHand() == null) {
+					let item = items.shift();
+					item.takeItem();
+					while(PBotUtils.getItemAtHand() == null) PBotUtils.sleep(15);
+				}
+
+				PBotGobAPI.makePile();
+
+				while(PBotUtils.getItemAtHand() != null) PBotUtils.sleep(15);
+
+				while(!PBotUtils.pfLeftClick(stockpileLocation.x+11, stockpileLocation.y)
+					&& !PBotUtils.pfLeftClick(stockpileLocation.x-11, stockpileLocation.y)
+					&& !PBotUtils.pfLeftClick(stockpileLocation.x, stockpileLocation.y+11)
+					&& !PBotUtils.pfLeftClick(stockpileLocation.x, stockpileLocation.y-11)) {
+					if(stop) {
+						break
+					} else if(window.closed()) {
+						PBotUtils.sysMsg("[윈도우가 닫혀서 " + title + "을 종료합니다!]");
+						PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+						return;	// 윈도우가 닫혔는지 검사한다.
+					}
+
+					PBotUtils.sysMsg("스톡파일을 만들 위치 상하좌우로의 길찾기를 실패했어요!");
+					// 사실 길을 찾는 순서는 우좌하상
+					PBotUtils.sysMsg("스톡파일을 만들 다음 위치로 넘어갑니다.");
+
+					if (stockpilePossibleLocations.length > 0) {
+						stockpileLocation = stockpilePossibleLocations.shift();
+					} else {
+						PBotUtils.sysMsg("더 이상 스톡파일을 만들 공간이 없어요.");
+						PBotUtils.sysMsg("[" + title + " 종료!]");
+						PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+						return;	// 스톡파일 만들 위치가 더 이상 존재하지 않을 때
+					}
+				}
+
+				PBotGobAPI.placeThing(stockpileLocation.x, stockpileLocation.y);
+				PBotGobAPI.waitForGob(stockpileLocation.x, stockpileLocation.y);
+
+				stockpile = PBotGobAPI.findGobByNames(1000, resourceNamesOfStockpile);
+				PBotUtils.sleep(1000);	// 스톡파일 윈도우가 열리는걸 기다리는 딜레이
+
+				PBotWindowAPI.putItemFromInventoryToStockpile(amountOfItem);
+				amountOfItem = 0;
+				while(PBotUtils.playerInventory().getInventoryItemsByResnames(itemResourcesToMakeStockpile).length != amountOfItem) PBotUtils.sleep(15);
+			} else {
+				PBotUtils.pfRightClick(stockpile, 0);
+
+				if(PBotUtils.getItemAtHand() != null) {
+					stockpile.itemClick(0);
+					while(PBotUtils.getItemAtHand() != null) PBotUtils.sleep(15);
+					stockpile.doClick(3, 0);
+				}
+
+				PBotWindowAPI.waitForWindow("Stockpile");
+
+				const leftCapacity = PBotWindowAPI.getStockpileTotalCapacity()-PBotWindowAPI.getStockpileUsedCapacity();
+			
+				if(amountOfItem >= leftCapacity) {
+					PBotUtils.sysMsg("스톡파일이 가득 찼어요.");
+					stockpile = null;
+					PBotWindowAPI.putItemFromInventoryToStockpile(leftCapacity);
+					amountOfItem -= leftCapacity;
+					while(PBotUtils.playerInventory().getInventoryItemsByResnames(itemResourcesToMakeStockpile).length != amountOfItem) PBotUtils.sleep(15);
+				} else {
+					PBotWindowAPI.putItemFromInventoryToStockpile(amountOfItem);
+					amountOfItem = 0
+					while(PBotUtils.playerInventory().getInventoryItemsByResnames(itemResourcesToMakeStockpile).length != amountOfItem) PBotUtils.sleep(15);
+				}
+			}
+		}
+	}
+
+	PBotUtils.sysMsg("[" + title + " 작동 완료!]");
+	PBotUtils.sysMsg("ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ");
+	window.closeWindow();
+}
+
+
+
+
+
+
+
+
+
+
+

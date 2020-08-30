@@ -1,0 +1,792 @@
+//
+// 해체 정리 ver. 0.3
+// made by Lieman 2019/04/29
+//
+// 동물을 해체하고 아이템을 정리하는 프로그램
+// 매크로 창을 닫아서 매크로를 종료할 수 있어요
+//
+// 대상 : 모든 동물
+//
+// 사용 방법
+// 1. 해체할 동물이 있는 영역을 드래그하여 지정한다
+//		- 추가적으로, 해당 영역안에 들어오는 새로운 동물도 해체의 대상이 된다
+// 2. 얻은 아이템을 보관할 보관함이 존재하는 영역을 드래그하여 지정한다
+// 3. 나온 아이템을 스톡파일로 쌓을 빈영역을 드래그하여 지정한다.
+//
+// 주의사항 : 동물과 보관함은 원활한 패스파인딩을 위하여
+//			 가급적 한 타일에 두 개 이상 두지 않을 것
+//
+//			 이 프로그램은 플라워 메뉴 자동 선택 기능을 켰다고 가정하고 짜여져 있어요
+//			 따라서 프로그램 동작을 위해 옵션의 메뉴 세팅에서
+//			 Shear wool, Break, Pick Leaf, Butcher, Scale, Crumble?, Skin, Collect bones를 체크해주세요
+//
+//           보관함에 아이템을 넣을 때 인벤토리의 모든 아이템을 넣기 때문에 유의해주세요
+//
+//           보관함을 선택할 때 최소 2개의 보관함이 포함되도록 범위를 지정해주세요
+//
+//			 스톡파일할 빈영역을 선택할 때 최소 3타일이 되도록 범위를 지정해주세요
+//
+//			 스톡파일할 빈영역에는 아무런 물체도 없는 곳을 선택해주세요
+//
+//			 보관함은 스트롱박스를 제외한 모든 보관함을 인식할 수 있어요
+//
+//			 무한모드를 체크하면 작업이 끝난 뒤에도 매크로가 종료되지 않고
+//			 1분마다 새로운 동물이 동물 인식 영역에 생겼는지를 체크해요
+//
+// 할 일
+// 두번째 페이즈에서 스톡파일을 다시 만들던가(다 안찼는데), 스톡파일에 아이템을 넣다가 멈추던가 하는 이슈 수정(아마도 수정, 테스트 해보자)
+//
+// 용어 설명
+// 1. 채집 대상(toCollect)으로부터 아이템(targetItem)을 채집(collect)하는 프로그램
+//
+
+
+
+// MARK:- 기본 세팅
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils");
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI");
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI");
+
+function javaListToArray(javalist) {
+	const ret = []
+	for(let i = 0; i < javalist.length; i++) {
+		ret.push(javalist.get(i))
+    }
+	return ret
+};
+
+
+
+// MARK:- UI setting
+const title = "해체 정리 ver. 0.3  "
+
+let windowWidth = 150 // 타이틀에 따라 직접 설정한다 (최소 윈도우 너비)
+
+const buttonNumber = 1
+
+const buttonWidth = 80 // 버튼 한글 글자 하나당 20 정도 차지(스페이스바2 = 한글1), 한글 4자당 뒤에 스페이스바 하나 추가
+const buttonHeight = 20
+
+const outlineGap = 5
+let outlineWidthGap = outlineGap
+const buttonGap = 10
+const heightOfCheckBox = 15
+const gapBetweenCheckBoxAndButton = 10
+
+const windowWidthConsideringButtonWidth = buttonWidth + outlineGap * 2
+
+if(windowWidth > windowWidthConsideringButtonWidth) {
+    outlineWidthGap = (windowWidth - buttonWidth) / 2
+} else {
+    windowWidth = windowWidthConsideringButtonWidth
+}
+
+windowHeight = buttonHeight * buttonNumber + outlineGap * 2 + buttonGap * (buttonNumber - 1) + heightOfCheckBox + gapBetweenCheckBoxAndButton
+
+// 윈도우 세팅
+const window = PBotUtils.PBotWindow(title, windowHeight, windowWidth, ScriptID)
+
+// 버튼 세팅
+const infiniteModeCheckBox = window.addCheckbox("infiniteModeCheck", "무한 모드", false, outlineWidthGap, outlineGap)
+const mainLoopButton = window.addButton("mainLoop", "해체 시작 ", buttonWidth, outlineWidthGap, outlineGap + gapBetweenCheckBoxAndButton + heightOfCheckBox)
+
+
+
+// MARK:- 기타 상수
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+const windowClosedMessage = "매크로 창을 닫아 매크로를 종료합니다."
+const lengthOfASideOfAStockpile = 11
+const lengthOfASideOfABody = 5.6
+const lengthOfASideOfATile = 11
+
+const displayNameOfGob = "동물"
+
+const selectToCollectAreaMessage = "해체할 동물이 있는 영역을 선택해주세요."
+const noGobToCollectMessage = "해체할 " + displayNameOfGob + "이 없어요!"
+
+const selectContainerAreaMessage = "해체한 아이템을 보관할 보관함이 있는 영역을 선택해주세요."
+const noContainerMessage = "해체한 아이템을 보관할 보관함이 없어요!"
+
+const selectAreaToStockpileMessage = "해체한 아이템을 스톡파일할 빈영역을 선택해주세요."
+const noStockpilableLocationMessage = "해체한 아이템을 스톡파일 할 빈영역이 없어요!"
+
+const partOfResourceNamesOfItemGob = ["gfx/terobjs/items/"]
+const partOfResourceNamesOfGobToCollect = ["gfx/kritter"]
+const partOfResourceNamesOfContainerGob = [
+	"gfx/terobjs/birchbasket",
+	"gfx/terobjs/bonechest",
+	"gfx/terobjs/coffer",
+	"gfx/terobjs/crate",
+	"gfx/terobjs/cupboard",
+	"gfx/terobjs/exquisitechest",
+	"gfx/terobjs/largechest",
+	"gfx/terobjs/linencrate",
+	"gfx/terobjs/metalcabinet",
+	"gfx/terobjs/stonecasket",
+	"gfx/terobjs/strawbasket",
+	"gfx/terobjs/wbasket",
+	"gfx/terobjs/woodbox",
+	"gfx/terobjs/chest"
+]
+
+class GobsOfStockpile {
+    constructor(
+        gobOfHideStockpile,
+        gobOfTrashStockpile,
+        gobOfBoneStockpile
+    ) {
+        this.gobOfHideStockpile = gobOfHideStockpile
+        this.gobOfTrashStockpile = gobOfTrashStockpile
+        this.gobOfBoneStockpile = gobOfBoneStockpile
+    }
+
+    getKindOf(kindOfItem) {
+        switch(kindOfItem) {
+            case data.gobOfHideStockpile:
+                return this.gobOfHideStockpile
+            case data.gobOfTrashStockpile:
+                return this.gobOfTrashStockpile
+            case data.gobOfBoneStockpile:
+                return this.gobOfBoneStockpile
+			default:
+				return null
+        }
+    }
+
+    setKindOfTo(kindOfItem, gobOfStockpile) {
+        switch(kindOfItem) {
+            case data.hideMaterial:
+                this.gobOfHideStockpile = gobOfStockpile
+				break
+            case data.trashMaterial:
+                this.gobOfTrashStockpile = gobOfStockpile
+				break
+            case data.boneMaterial:
+                this.gobOfBoneStockpile = gobOfStockpile
+				break
+			default:
+				break
+        }
+    } 
+}
+
+class KindOfItem {
+	constructor(
+		partsOfResourceNameOfItemInTheInventory,
+		resourceNameOfStockpileGob
+	) {
+		this.partsOfResourceNameOfItemInTheInventory = partsOfResourceNameOfItemInTheInventory
+		this.stockpileGobResourceName = stockpileGobResourceName
+	}
+}
+
+const data = {
+	hideMaterial: new KindOfItem(
+		["hide"],
+		"gfx/terobjs/stockpile-hide"
+	),
+	trashMaterial: new KindOfItem(
+		["gfx/invobjs/intestines", "gfx/invobjs/entrails"],
+		"gfx/terobjs/stockpile-trash"
+	),
+	boneMaterial: new KindOfItem(
+		[
+			"gfx/invobjs/bone",
+			"gfx/invobjs/antchitin",
+			"gfx/invobjs/beartooth",
+			"gfx/invobjs/billygoathorn",
+			"gfx/invobjs/boartusk",
+			"gfx/invobjs/borewormbeak",
+			"gfx/invobjs/whalebone",
+			"gfx/invobjs/cachalottooth",
+			"gfx/invobjs/cavelousechitin",
+			"gfx/invobjs/flipperbone",
+			"gfx/invobjs/lynxclaws",
+			"gfx/invobjs/mammothtusk",
+			"gfx/invobjs/antlers-moose",
+			"gfx/invobjs/antlers-reddeer",
+			"gfx/invobjs/antlers-reindeer",
+			"gfx/invobjs/trollskull",
+			"gfx/invobjs/trolltusks",
+			"gfx/invobjs/trollbone",
+			"gfx/invobjs/walrustusk",
+			"gfx/invobjs/wildgoathorn",
+			"gfx/invobjs/wolfclaw"
+		],
+		"gfx/terobjs/stockpile-bone"
+	),
+	etcMaterial: new KindOfItem(
+		[],
+		"never matching"
+	)
+}
+
+
+
+// MARK:- 함수 구현부
+function printStartMessage() {
+	PBotUtils.sysMsg(cuttingLine)
+	PBotUtils.sysMsg("[" + title + " 가동!]")
+}
+
+function printCompleteMessage() {
+    PBotUtils.sysMsg("[" + title + " 완료!]")
+    PBotUtils.sysMsg(cuttingLine)
+	window.closeWindow();
+}
+
+function printTerminateMessageWith(message) {
+	if(message != null) {
+		PBotUtils.sysMsg(message)
+	}
+    PBotUtils.sysMsg("[" + title + " 종료!]")
+    PBotUtils.sysMsg(cuttingLine)
+	window.closeWindow();
+}
+
+// 리소스 네임.contains(partOfResourceNameOfTargetItem)인 아이템의 수가 기대하는 값이 될 때까지 sleep하는 함수
+// input : (string partOfResourceNameOfTargetItem, int amountOfTargetItemExpectToBeInPlayerInventory)
+function sleepUntilPutTargetItems(partOfResourceNameOfTargetItem, amountOfTargetItemExpectToBeInPlayerInventory) {
+	let currentAmountOfTargetItemInPlayerInventory
+
+	do {
+		if(window.closed()) {
+			printTerminateMessageWith(windowClosedMessage)
+			return
+		}
+
+		PBotUtils.sleep(100)
+
+		currentAmountOfTargetItemInPlayerInventory = amountOfTargetItemInPlayerInventory(partOfResourceNameOfTargetItem)
+	} while(currentAmountOfTargetItemInPlayerInventory != amountOfTargetItemExpectToBeInPlayerInventory)
+}
+
+// input	: (string partOfResourceNameOfTargetItem)
+// output	: int amountOfTargetItemInPlayerInventory
+function amountOfTargetItemInPlayerInventory(partOfResourceNameOfTargetItem) {
+		const itemsInPlayerInventory = javaListToArray(PBotUtils.playerInventory().getInventoryContents())
+		const targetItemsInPlayerInventory = itemsInPlayerInventory.filter(item => item.getResname().contains(partOfResourceNameOfTargetItem))
+		const amountOfTargetItemInPlayerInventory = targetItemsInPlayerInventory.length
+
+		return amountOfTargetItemInPlayerInventory
+}
+
+// 선택된 영역 내에서
+// input	: ([string] partOfGobResourceNames)
+// output	: [gob] gobsContaining
+// 추가 작업 : 동물이면 넉만 따로 골라낸다
+function gobsContainingAtLeastOneOf(partOfGobResourceNames, searchingLocationA, searchingLocationB) {
+	const gobsAtSelectedArea = javaListToArray(PBotUtils.gobsInArea(searchingLocationA, searchingLocationB))
+	let gobsContainingAtLeastOneOfName = gobsAtSelectedArea.filter(
+		(gob) => {
+			let result
+
+			for(let i = 0; i < partOfGobResourceNames.length; i++) {
+				result = result || gob.getResname().contains(partOfGobResourceNames[i])
+			}
+
+			return result
+		}
+	)
+
+	// 추가 작업
+	if (partOfGobResourceNames == "gfx/kritter") {
+		gobsContainingAtLeastOneOfName = gobsContainingAtLeastOneOfName.filter(gob => gob.getPoses()[0].contains("knock"))
+	}
+
+	return gobsContainingAtLeastOneOfName
+}
+
+// lengthOfASideOfAStockpile에 따라
+// input	: (int lengthOfASideOfAStockpile)
+// output	: [{x, y}] stockpilableLocations
+function stockpilableLocationsAlong(lengthOfASideOfAStockpile) {
+	PBotUtils.selectArea()
+
+	const northWestPoint = PBotUtils.getSelectedAreaA()
+	const southEastPoint = PBotUtils.getSelectedAreaB()
+
+	const stockpilableLocations = []
+
+	for(let yCoordinate = northWestPoint.y + lengthOfASideOfAStockpile / 2; yCoordinate <= southEastPoint.y - lengthOfASideOfAStockpile / 2; yCoordinate += lengthOfASideOfAStockpile) {
+		for(let xCoordinate = northWestPoint.x + lengthOfASideOfAStockpile / 2; xCoordinate <= southEastPoint.x - lengthOfASideOfAStockpile / 2; xCoordinate += lengthOfASideOfAStockpile) {
+			stockpilableLocations.push({x: xCoordinate, y: yCoordinate})
+		}
+	}
+
+	return stockpilableLocations
+}
+
+// automatic selection considered, must gob != null
+// input	: (gob gob, string displayNameOfGob)
+// output	: boolean
+// true		: gob can have target item
+// false	: this gob doesn't have any target item 
+function tryToAcquireMaterialsWithAutomaticSelectionFrom(gob, displayNameOfGob) {
+	gob.pfClick(1, 0)
+	PBotUtils.sleep(1000) // 플라워 메뉴 전 슬립
+	gob.doClick(3, 0)
+	PBotUtils.sysMsg("모래시계가 돌아가는걸 기다려요.")
+
+	if(PBotUtils.waitForHourglass(2000)) {
+		PBotUtils.sysMsg("모래시계가 끝난걸 감지했어요.")
+		return true
+	} else {
+		PBotUtils.sysMsg(displayNameOfGob + " 한 마리를 다 해체했어요.")
+		return false // gob으로부터 
+	}
+}
+
+// input	: ([string] partOfItemResourceNames)
+// output	: [PBotItem] itemsInPlayerInventoryOfKind
+// cautions	: if kindOfItem.partOfItemResourceNames.length < 1, return itemsInPlayerInventory
+function itemsInPlayerInventoryKindOf(kindOfItem) {
+	const itemsInPlayerInventory = javaListToArray(PBotUtils.playerInventory().getInventoryContents())
+
+	if(kindOfItem.partOfItemResourceNames.length != 0) {
+		let itemsInPlayerInventoryOfKind = itemsInPlayerInventory.filter(item => isItemKindOf(kindOfItem.partOfItemResourceNames, item))
+
+		return itemsInPlayerInventoryOfKind
+	} else {
+		return itemsInPlayerInventory
+	}
+
+}
+
+// input	: (PBotItem item)
+// output	: string
+function kindOf(item) {
+	if (isItemKindOf(data.hideMaterial.partOfItemResourceNames, item)) {
+		return data.hideMaterial
+	} else if(isItemKindOf(data.trashMaterial.partOfItemResourceNames, item)) {
+		return data.trashMaterial
+	} else if(isItemKindOf(data.boneMaterial.partOfItemResourceNames, item)) {
+		return data.boneMaterial
+	} else {
+		return data.etcMaterial
+	}
+}
+
+// input	: ([string] partOfItemResourceNames, PBotItem item)
+// output	: boolean
+function isItemKindOf(partOfItemResourceNames, item) {
+	const resourceNameOfItem = item.getResname()
+
+	let result
+
+    if(partOfItemResourceNames.length == 0) {
+        return true
+    }
+
+	for(let i = 0; i < partOfItemResourceNames.length; i++) {
+		result = result || resourceNameOfItem.contains(partOfItemResourceNames[i])
+	}
+
+	return result
+}
+
+// input	: ({x, y} stockpilableLocation, Body)
+// output	: gob newStockpileGob
+// exist	: succeed making new stockpile
+// null		: failed making new stockpile
+// cautions	: PBotUtils.getItemAtHand() must stockpilable
+// 			: didn't set sleep at last part, so if you are going to control the stockpile contents, put sleep maybe
+function makeNewStockpileWithItemAtHand(stockpilableLocation) {
+	if (stockpilableLocation == null) {
+		return
+	}
+
+	PBotUtils.sysMsg("새로운 스톡파일을 만들어요.")
+
+	const kindOfItemAtHand = kindOf(PBotUtils.getItemAtHand())
+	PBotGobAPI.makePile();
+
+	while(PBotUtils.getItemAtHand() != null) {
+		if(window.closed()) {
+			printTerminateMessageWith(windowClosedMessage)
+			return
+		}
+
+		PBotUtils.sleep(500); // 스톡파일 배치모드를 기다리는 딜레이
+	}
+
+	const spareDistance = Math.ceil((lengthOfASideOfAStockpile + lengthOfASideOfABody) / 2 / 11) * 11
+
+	if(!PBotUtils.pfLeftClick(stockpilableLocation.x + spareDistance, stockpilableLocation.y)
+		&& !PBotUtils.pfLeftClick(stockpilableLocation.x - spareDistance, stockpilableLocation.y)
+		&& !PBotUtils.pfLeftClick(stockpilableLocation.x, stockpilableLocation.y + spareDistance)
+		&& !PBotUtils.pfLeftClick(stockpilableLocation.x, stockpilableLocation.y - spareDistance)) {
+		PBotUtils.sysMsg("스톡파일을 만들 위치 상하좌우로의 길찾기를 실패했어요!")
+		// 사실 길을 찾는 순서는 우좌하상
+		PBotUtils.sysMsg("스톡파일을 만들 다음 위치로 넘어갑니다.")
+		return
+	}
+
+	PBotGobAPI.placeThing(stockpilableLocation.x, stockpilableLocation.y)
+	PBotUtils.sysMsg("스톡파일이 설치되는걸 기다려요.")
+	PBotGobAPI.waitForGob(stockpilableLocation.x, stockpilableLocation.y)
+
+	const stockpileGob = PBotGobAPI.findGobByNames(100, [kindOfItemAtHand.stockpileGobResourceName])
+
+	return stockpileGob
+}
+
+// input	: (data.kindOfItem kindOfItem, {}, [{x, y}] stockpilableLocations)
+// output	: boolean shouldContinue
+// true		: shouldContinue
+// false	: shouldReturn
+// null		: goNextPhase
+// 인벤토리에 있는 해당 종류의 아이템을 해당하는 스톡파일에 넣는다, 없으면 만든다
+// cautions	: 이 함수가 끝나면 스톡도 없고, 가능한 위치도 없을 때 리턴하도록 해야한다
+function stockItemsOfKind(kindOfItem, stockpiles, stockpilableLocations) {
+	const itemsOfKind = itemsInPlayerInventoryKindOf(kindOfItem)
+	const countOfItem = itemsOfKind.length
+
+	if(countOfItem > 0) {
+		const oneItemOfKind = itemsOfKind.shift()
+
+		if(stockpiles.stockpile(kindOfItem) == null) {
+			let stockpilableLocation
+			oneItemOfKind.takeItem()
+
+			if(PBotUtils.getItemAtHand() == null) {
+				if(window.closed()) {
+					printTerminateMessageWith(windowClosedMessage)
+					return
+				}
+
+				PBotUtils.sleep(500)
+			}
+
+			do {
+				if(window.closed()) {
+					return true
+				}
+
+				stockpilableLocation = stockpilableLocations.shift()
+
+				if (stockpilableLocation == null) {
+					return false
+				}
+                
+                const stockpileGob = makeNewStockpileWithItemAtHand(stockpilableLocation)
+                stockpiles.setStockpileKindOf(kindOfItem, stockpileGob)
+                
+			} while(stockpiles.stockpile(kindOfItem) == null)
+
+			return true
+		} else {
+            const currentStockpile = stockpiles.stockpile(kindOfItem)
+            currentStockpile.pfClick(3, 0)
+			PBotUtils.sleep(1000) // 스톡파일 열리는걸 기다리는 딜레이인듯
+
+			const countOfFreeStockpileSlot = PBotWindowAPI.getStockpileTotalCapacity() - PBotWindowAPI.getStockpileUsedCapacity()
+
+
+			if(countOfItem >= countOfFreeStockpileSlot) {
+                const amountOfTargetItemExpectToBeInPlayerInventory = countOfItem - countOfFreeStockpileSlot
+				PBotWindowAPI.putItemFromInventoryToStockpile(countOfFreeStockpileSlot)
+				sleepUntilPutTargetItems(kindOfItem.partOfItemResourceNames, amountOfTargetItemExpectToBeInPlayerInventory)
+				stockpiles.setStockpileKindOf(kindOfItem, null)
+				return true
+			} else {
+				PBotWindowAPI.putItemFromInventoryToStockpile(countOfItem)
+				sleepUntilPutTargetItems(kindOfItem.partOfItemResourceNames, 0)
+				return true
+			}
+		}
+	} else {
+		return
+	}
+}
+
+
+
+function infiniteModeCheck() {
+}
+
+
+
+// MARK:- mainLoop
+// 탐색 - 채집 반복, 꾸준히 범위 내의 곱을 재탐색하자!
+function mainLoop() {
+    let stockpiles = new Stockpiles(null, null, null)
+
+	let gobsToCollect
+
+	let currentGobToCollect
+
+	let currentContainer
+
+	let toCollectLocationA
+	let toCollectLocationB
+
+	let nearestTerrainItemGob
+
+
+
+	printStartMessage()
+
+	PBotUtils.sysMsg(selectToCollectAreaMessage)
+	
+	PBotUtils.selectArea()
+
+    toCollectLocationA = PBotUtils.getSelectedAreaA()
+  	toCollectLocationB = PBotUtils.getSelectedAreaB()
+
+	gobsToCollect = gobsContainingAtLeastOneOf(partOfResourceNamesOfGobToCollect, toCollectLocationA, toCollectLocationB)
+
+	if (gobsToCollect.length < 1) {
+		printTerminateMessageWith(noGobToCollectMessage)
+		return
+	} else if (window.closed()) {
+		printTerminateMessageWith(windowClosedMessage)
+		return
+	}
+
+    PBotUtils.sysMsg(gobsToCollect.length + "마리의 동물을 발견했어요.")
+	PBotUtils.sysMsg(selectContainerAreaMessage)
+
+	PBotUtils.selectArea()
+
+    const searchingLocationA = PBotUtils.getSelectedAreaA()
+  	const searchingLocationB = PBotUtils.getSelectedAreaB()
+
+	const containerGobs = gobsContainingAtLeastOneOf(partOfResourceNamesOfContainerGob, searchingLocationA, searchingLocationB)
+
+	if (containerGobs.length < 2) {
+		printTerminateMessageWith("적어도 2개의 보관함이 포함되도록 영역을 지정해주세요!")
+		return
+	} else if (window.closed()) {
+		printTerminateMessageWith(windowClosedMessage)
+		return
+	}
+
+	for(let i = 0; i < containerGobs.length; i++) {
+		containerGobs[i].addGobText("보관함" + (i + 1), 0)
+	}
+
+    PBotUtils.sysMsg(containerGobs.length + "개의 보관함을 발견했어요.")
+	PBotUtils.sysMsg(selectAreaToStockpileMessage)
+	const stockpilableLocations = stockpilableLocationsAlong(lengthOfASideOfAStockpile)
+
+	if (stockpilableLocations.length < 3) {
+		printTerminateMessageWith("최소 3칸의 타일을 선택해주세요!")
+		return
+	} else if (window.closed()) {
+		printTerminateMessageWith(windowClosedMessage)
+		return
+	}
+    
+    PBotUtils.sysMsg("스톡파일을 설치할만한 공간을 " + stockpilableLocations.length + "칸 발견했어요.")
+
+	// 초기 세팅
+	currentContainer = containerGobs.shift()
+
+	gobsToCollect = gobsContainingAtLeastOneOf(partOfResourceNamesOfGobToCollect, toCollectLocationA, toCollectLocationB)
+
+	currentGobToCollect = gobsToCollect.shift()
+
+
+
+	// 메인 루프 시작
+	while(true) {
+		// 해체 하기
+		while(true) {
+			if(window.closed()) {
+				printTerminateMessageWith(windowClosedMessage)
+				return
+			}
+
+			if(containerGobs.length == 0) {
+				break
+			}
+			
+			const succeedCollectingTargetItem = tryToAcquireMaterialsWithAutomaticSelectionFrom(currentGobToCollect, displayNameOfGob)
+			if(succeedCollectingTargetItem) {
+				PBotUtils.sleep(1000) // 다 해체하고 손에 아이템이 올라오는게 늦을까봐..?
+
+				if(PBotUtils.getItemAtHand() != null) {
+					PBotUtils.dropItemFromHand(0)
+					continue
+				} else {
+					continue
+				}
+			} else {
+				if(PBotUtils.getItemAtHand() != null) {
+					PBotUtils.dropItemFromHand(0)
+					break
+				} else {
+					gobsToCollect = gobsContainingAtLeastOneOf(partOfResourceNamesOfGobToCollect, toCollectLocationA, toCollectLocationB)
+					currentGobToCollect = gobsToCollect.shift()
+
+					if(currentGobToCollect != null) {
+						continue
+					} else {
+						break
+					}
+				}
+				
+			}
+		}
+
+        nearestTerrainItemGob = PBotGobAPI.findGobByNames(lengthOfASideOfATile * 3, partOfResourceNamesOfItemGob)
+        PBotUtils.sysMsg("아이템을 스톡파일해요.")
+
+		// 아이템 정리하기
+		while(true) {
+            if(window.closed()) {
+                printTerminateMessageWith(windowClosedMessage)
+                return
+            }
+            
+            let shouldContinue
+
+            let items = itemsInPlayerInventoryKindOf(data.hideMaterial)
+            let countOfItems = items.length
+
+            if(countOfItems > 0) {
+                shouldContinue = stockItemsOfKind(data.hideMaterial, stockpiles, stockpilableLocations)
+            }
+
+            if(shouldContinue) {
+                continue
+            } else if(shouldContinue == false) { // null은 그냥 통과시키기 위해서
+                printTerminateMessageWith(noStockpilableLocationMessage)
+                return
+            }
+
+            items = itemsInPlayerInventoryKindOf(data.trashMaterial)
+            countOfItems = items.length
+            if(countOfItems > 0) {
+                shouldContinue = stockItemsOfKind(data.trashMaterial, stockpiles, stockpilableLocations)
+            }
+
+            if(shouldContinue) {
+                continue
+            } else if(shouldContinue == false) { // null은 그냥 통과시키기 위해서
+                printTerminateMessageWith(noStockpilableLocationMessage)
+                return
+            }
+
+            items = itemsInPlayerInventoryKindOf(data.boneMaterial)
+            countOfItems = items.length
+
+            if(countOfItems > 0) {
+                shouldContinue = stockItemsOfKind(data.boneMaterial, stockpiles, stockpilableLocations)
+            }
+
+            if(shouldContinue) {
+                continue
+            } else if(shouldContinue == false) { // null은 그냥 통과시키기 위해서
+                printTerminateMessageWith(noStockpilableLocationMessage)
+                return
+            }
+
+			PBotUtils.sysMsg("아이템을 보관함에 넣어요.")
+
+            if(currentContainer != null) {
+                currentContainer.pfClick(3, 0)
+                PBotUtils.sleep(1000) // 보관함 여는걸 기다리는 딜레이
+
+                const allInventory = javaListToArray(PBotUtils.getAllInventories())
+                
+                let countOfFreeSlotOfContainer = PBotUtils.getAllInventories()[0].freeSlotsInv()
+
+                items = itemsInPlayerInventoryKindOf(data.etcMaterial)
+                countOfItems = items.length
+
+                const transferCount = Math.min(countOfItems, countOfFreeSlotOfContainer)
+
+                for(let i = 0; i < transferCount; i++) {
+                    const item = items.shift()
+                    item.transferItem()
+                }
+
+                if(countOfItems >= countOfFreeSlotOfContainer) {
+                    PBotUtils.sysMsg("이 보관함은 가득 찼어요.")
+                    currentContainer = containerGobs.shift()
+                    continue
+                } else {
+                    if(nearestTerrainItemGob != null) {
+                        while(true) {
+							if(window.closed()) {
+								printTerminateMessageWith(windowClosedMessage)
+								return
+							}
+
+                            nearestTerrainItemGob.pfClick(3, 1)
+                            PBotUtils.sleep(2000) // 쉬프트 클릭으로 아이템 줍는거 기다리기
+							nearestTerrainItemGob.doClick(1, 0) // 아이템곱 새로 지정하기 전 쉬우클 캔슬
+							PBotUtils.sleep(1000)
+
+                            if(PBotUtils.getItemAtHand() != null) {
+								PBotUtils.dropItemFromHand(0)
+								
+								PBotUtils.sysMsg("가방을 정리해야겠어요.")
+								
+								nearestTerrainItemGob = PBotGobAPI.findGobByNames(lengthOfASideOfATile * 3, partOfResourceNamesOfItemGob)
+                                break
+                            } else {
+                                nearestTerrainItemGob = PBotGobAPI.findGobByNames(lengthOfASideOfATile * 3, partOfResourceNamesOfItemGob)
+                                if(nearestTerrainItemGob != null) {
+                                    continue
+                                } else {
+                                    break
+                                }
+                            }
+                        }
+
+                        if(PBotUtils.getItemAtHand() != null) {
+							PBotUtils.dropItemFromHand(0)
+                            continue
+                        } else {
+                            if(containerGobs.length > 0) {
+                                gobsToCollect = gobsContainingAtLeastOneOf(partOfResourceNamesOfGobToCollect, toCollectLocationA, toCollectLocationB)
+                                
+								currentGobToCollect = gobsToCollect.shift()
+
+                                if(currentGobToCollect != null) {
+                                    break
+                                } else {
+                                    continue
+                                }
+                            }
+                        }
+                    } else {
+                        if(containerGobs.length > 0) {
+                            gobsToCollect = gobsContainingAtLeastOneOf(partOfResourceNamesOfGobToCollect, toCollectLocationA, toCollectLocationB)
+                            currentGobToCollect = gobsToCollect.shift()
+
+                            if(currentGobToCollect != null) {
+                                break
+                            } else {
+								if(infiniteModeCheckBox.getValue()) {
+									while(true) {
+										gobsToCollect = gobsContainingAtLeastOneOf(partOfResourceNamesOfGobToCollect, toCollectLocationA, toCollectLocationB)
+										currentGobToCollect = gobsToCollect.shift()
+
+										if(currentGobToCollect != null) {
+											break
+										}
+										PBotUtils.sleep(60000)
+									}
+									break
+								} else {
+									printCompleteMessage()
+									return
+								}
+                            }
+                        } else {
+                            printTerminateMessageWith(noContainerMessage)
+                            return
+                        }
+                    }
+                }
+            } else {
+                printTerminateMessageWith(noContainerMessage)
+                return
+            }
+		}
+	}
+}

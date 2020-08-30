@@ -1,0 +1,104 @@
+const PBotUtils = Java.type('haven.purus.pbot.PBotUtils');
+const PBotCharacterAPI = Java.type("haven.purus.pbot.PBotCharacterAPI");
+const PBotWindowAPI = Java.type('haven.purus.pbot.PBotWindowAPI');
+const PBotGobAPI = Java.type('haven.purus.pbot.PBotGobAPI');
+
+let shouldStop = false;
+
+javaListToArray = (javalist) => {
+	const ret = [];
+	for(let i=0; i<javalist.size(); i++)
+		ret.push(javalist.get(i));
+	return ret;
+};
+
+main = () => {
+
+	PBotUtils.sysMsg("옮길 나무가 있는 영역을 드래그 해주세요.");
+
+	PBotUtils.selectArea();
+	let startPoint = PBotUtils.getSelectedAreaA();
+	let endPoint = PBotUtils.getSelectedAreaB();
+
+	let gobs = javaListToArray(PBotUtils.gobsInArea(startPoint, endPoint));
+	let logs = gobs.filter((gob) => {
+		return gob.getResname().includes("log")
+	});
+
+	PBotUtils.sysMsg(logs.length + "개의 로그를 발견했어요!");
+
+	PBotUtils.sysMsg("나무를 실을 '빈'수레를 포함한 영역을 드래그 해주세요.");
+
+	PBotUtils.selectArea();
+	startPoint = PBotUtils.getSelectedAreaA();
+	endPoint = PBotUtils.getSelectedAreaB();
+
+	gobs = javaListToArray(PBotUtils.gobsInArea(startPoint, endPoint));
+	let carts = gobs.filter((gob) => {
+	return gob.getResname() == "gfx/terobjs/vehicle/cart"
+	});
+
+	PBotUtils.sysMsg(carts.length + "개의 카트를 발견했어요!");
+
+	PBotUtils.sysMsg("나무를 카트에 싣기 시작합니다.");
+
+	//정리
+	//let arrangedLogs = logs.sort((lhs, rhs) => {
+	//	return lhs.getRcCoords.x > rhs.getRcCoords.x
+	//})
+
+	while(carts.length > 0) {
+		let cart = carts.shift();
+
+		let logInCart = 0
+
+		while(logs.length > 0) {
+			PBotUtils.sysMsg("테스트 출력문-1 : " + (logs[0].getRcCoords.x));
+
+			let log = logs.shift();
+
+			PBotUtils.sysMsg("테스트 출력문0 : " + (log.getRcCoords.x));
+			log.pfClick(1, 0);
+			PBotCharacterAPI.doAct("carry");
+			log.doClick(1, 0);
+			PBotUtils.sleep(500)
+
+			PBotUtils.sysMsg("테스트 출력문1 : " + (log.getRcCoords.x));
+
+			cart.pfClick(1, 0);
+			cart.doClick(3, 0);
+			PBotUtils.sleep(1000)
+
+			logInCart++;
+
+			PBotUtils.sysMsg("테스트 출력문2 : " + (log.getRcCoords.x));
+
+			if (logInCart == 6) {
+				break;
+			}
+		}
+	}
+
+	if(logs.length = 0) {
+		PBotUtils.sysMsg("나무 싣기 작업이 성공적으로 끝났어요!");
+	} else if(carts.length = 0) {
+		PBotUtils.sysMsg("이런! 나무를 다 싣기에는 카트가 부족했어요!");
+	} else {
+		PBotUtils.sysMsg("오류! 오류!");
+		PBotUtils.sysMsg("나무/카트 = " + logs.length + "/" + carts.length);
+	}
+
+	if(logs.length == 0) {
+		PBotUtils.sysMsg("나무 싣기 작업이 성공적으로 끝났어요!");
+	} else if(carts.length == 0) {
+		PBotUtils.sysMsg("이런! 나무를 다 싣기에는 카트가 부족했어요!");
+	} else {
+		PBotUtils.sysMsg("오류! 오류!");
+		PBotUtils.sysMsg("나무/카트 = " + logs.length + "/" + carts.length);
+	}
+
+	PBotUtils.sysMsg("매크로 종료");
+
+}
+
+main();
