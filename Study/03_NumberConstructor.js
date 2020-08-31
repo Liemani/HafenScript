@@ -5,7 +5,7 @@ class Size {
     }
 }
 
-// function init(thing) { return thing != null ? thing : 0 }
+// '===' check shellowly so perfect for checking undefined
+// contrast, '==' tests for loose equality and preforms type coercion. This means we compare two values after converting them to a common type.
+// https://codeburst.io/javascript-null-vs-undefined-20f955215a2
 function init(thing) { return thing === undefined ? 0 : thing }
-
-// load("../testCode.js")
