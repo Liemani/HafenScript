@@ -1,0 +1,215 @@
+//********************************************
+const title = "Test"
+// made by Lieman at 2020.04.12
+//
+// short description:
+// 코드를 테스트하는 곳입니다
+//********************************************
+
+
+
+
+
+// index
+// declaration
+// constant and variable
+// main function
+// extension
+
+
+
+
+
+// declaration
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+
+
+
+
+
+// constant and variable
+const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+
+const buttonDataArray = [
+    ["excute", "excute"],
+    ["getAGob", "get a gob"],
+    ["getGobsFromArea", "get gobs from area"],
+]
+
+let buttonArray = []
+
+const windowSpace = 15
+
+const windowTopMargin = 0
+const windowLeftMargin =  5
+const windowRightMargin = 5
+const windowBottomMargin = 10
+
+const buttonWidth = 140
+const buttonHeight = 20
+const buttonNumber = buttonDataArray.length
+
+const testWaypoint = [
+    {"something test": "test value"},
+    [100, 100],
+    [0, 0],
+    [50, 50],
+]
+
+
+
+
+
+// main function
+main()
+
+function main() {
+    drawUI()
+}
+
+function drawUI() {
+    // calculate window size
+    const windowWidth = windowLeftMargin + buttonWidth + windowRightMargin
+    const windowHeight = windowTopMargin + (buttonHeight * buttonNumber + windowSpace * (buttonNumber - 1)) + windowBottomMargin
+
+    // make window
+    const window = PBotUtils.PBotWindow(title, windowHeight, windowWidth, ScriptID)
+
+    // make button
+    for(let index = 0; index < buttonDataArray.length; index++) {
+        buttonArray.push(window.addButton(buttonDataArray[index][0],
+                                            buttonDataArray[index][1],
+                                            buttonWidth,
+                                            windowLeftMargin,
+                                            windowTopMargin + (buttonHeight + windowSpace) * index))
+    }
+}
+
+function excute() {
+    test004()
+}
+
+function getAGob() {
+	print(cuttingLine)
+	print("[gob 출력 시작!]")
+
+	print("출력할 gob을 alt+클릭 해주세요.")
+
+	let gob = PBotGobAPI.selectGob()
+
+    print(gob.getResname())
+	print("Includes 'b'?: " + (gob.getResname().includes("b") ? "true" : "false"))
+
+	print("[gob 출력 완료!]")
+}
+
+function getGobsFromArea() {
+
+}
+
+function test004() {
+
+}
+
+function test003() {
+    let wayPoint = new Waypoint(testWaypoint.shift(), testWaypoint)
+    print(wayPoint.length())
+}
+
+function test002() {
+    let testVariable = {"key": "value"}
+    print(Object.values(testVariable)[0])
+}
+
+function test001() {
+    let testVariable = 10
+    print(testVariable)
+    testVariable = 10.0
+    print(testVariable)
+    testVariable = "string value"
+    print(testVariable)
+}
+
+
+
+
+
+// extension
+function print(text) {
+    // How can i make numeric type to String type??
+    PBotUtils.sysMsg(text + "")
+}
+
+class Waypoint {
+    constructor(durableConsumptionPair, waypoint) {
+        this.durableConsumption = Object.values(durableConsumptionPair)[0]
+            this.vectors = []
+        for(let index = 0; index < waypoint.length; index++) {
+            const vector = waypoint[index]
+            this.push(new Vector(vector[0], vector[1]))
+        }
+    }
+
+    vector(index) {
+        return this.vectors[index]
+    }
+
+    length() {
+        return this.vectors.length
+    }
+
+    push(vector) {
+        this.vectors.push(vector)
+    }
+}
+
+class Vector {
+    constructor(x, y) {
+        this.x = x
+        this.y = y
+    }
+
+    add(vector) {
+        const x = this.x + vector.x
+        const y = this.y + vector.y
+
+        return new Vector(x, y)
+    }
+
+    subtract(vector) {
+        const x = this.x - vector.x
+        const y = this.y - vector.y
+
+        return new Vector(x, y)
+    }
+
+    parseInt() {
+        const x = parseInt(this.x)
+        const y = parseInt(this.y)
+
+        return new Vector(x, y)
+    }
+}
+
+
+
+
+
+/*
+// constant and variable
+let buttonArray = []
+let index = 0
+
+// main
+buttonArray.push("아무 말")
+buttonArray.push(1)
+
+PBotUtils.sysMsg("Length: " + buttonArray.length)
+
+PBotUtils.sysMsg("buttonArray["+index+"]: " + buttonArray[0])
+index++
+
+PBotUtils.sysMsg("buttonArray["+index+"]: " + buttonArray[1])
+index++
+*/
