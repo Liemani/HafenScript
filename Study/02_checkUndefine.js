@@ -16,4 +16,4 @@ printSystemChatWindow("(void(0) == undefined): " + (void(0) == undefined))    //
 
 printSystemChatWindow("typeof abcd: " + typeof abcd)    // number
 printSystemChatWindow("typeof abcd: " + typeof aabbccdd)    // string
-printSystemChatWindow("typeof abcd: " + typeof aabbccddeef)    / undefined
+printSystemChatWindow("typeof abcd: " + typeof aabbccddeef)    // undefined

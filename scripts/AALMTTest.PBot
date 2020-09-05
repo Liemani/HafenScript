@@ -6,6 +6,55 @@ const title = "ALMTATest"
 // Test
 //********************************************
 
+
+
+
+
+// Java.type
+
+
+
+if (this.PBotUtils === undefined) {
+    PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
+}
+
+function printSystemChatWindow(thing) {
+    PBotUtils.sysMsg(String(thing))
+}
+
+function getJavaType(object, target) {
+    object.value = Java.type(target)
+    printSystemChatWindow(object.value === undefined)
+}
+
+
+printSystemChatWindow(this.PBotGobAPI === undefined)
+if (this.PBotGobAPI === undefined) {
+    this.PBotGobAPI = {value: 0}
+    printSystemChatWindow(this.PBotGobAPI === undefined)
+    //PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
+    getJavaType(this.PBotGobAPI, "haven.purus.pbot.PBotGobAPI")
+
+    printSystemChatWindow(this.PBotGobAPI.value === undefined)
+}
+printSystemChatWindow(this.PBotGobAPI.value === undefined)
+
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI")
+const Coord = Java.type("haven.Coord")
+
+
+
+
+
+// load module
+// load("LMT/UI/View.js")
+// load("../Study/02_checkUndefine.js")    // load function execute all global expression in that file
+
+
+
+
+
+// class
 /*
 class Size2 {
     constructor(width, height) {
@@ -15,31 +64,41 @@ class Size2 {
 }
 */
 
-load("LMT/UI/View.js")
-// load("../Study/02_checkUndefine.js")    // run all base code in that file
 
-if (typeof PBotUtils == undefined) {
-    const PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
-}
 
-const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
-const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI")
-const Coord = Java.type("haven.Coord")
 
+
+// function
 function printSystemChatWindow(thing) {
     PBotUtils.sysMsg(String(thing))
 }
 
+
+
+
+
+// variable
 const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
 
+
+
+
+
+// main execution
+/*
 printSystemChatWindow(cuttingLine)
+printSystemChatWindow(this.PBotUtils === undefined)
+printSystemChatWindow(PBotUtils === undefined)
+printSystemChatWindow(typeof this)
+
+myName = "Lieman"
+printSystemChatWindow(this.myName)
+printSystemChatWindow(myName)
+myName = "Liewoman"
+printSystemChatWindow(this.myName)
+printSystemChatWindow(myName)
+*/
 
 
 
-var abcd = 0
-var aabbccdd = 0
-aabbccdd = "hi"
-
-
-
-var mySize = new Size(10, 10)
+// var mySize = new Size(10, 10)
