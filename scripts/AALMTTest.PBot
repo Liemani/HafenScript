@@ -1,104 +1,25 @@
 //********************************************
 const title = "ALMTATest"
-// made by Lieman
+// designed by Lieman
 //
 // short description:
 // Test
+//
+//  to do
+// - check posibility of mutual referencing
+// - how to prevent load overlapping
 //********************************************
 
 
 
 
 
-// Java.type
-
-
-
-if (this.PBotUtils === undefined) {
-    PBotUtils = Java.type("haven.purus.pbot.PBotUtils")
-}
-
-function printSystemChatWindow(thing) {
-    PBotUtils.sysMsg(String(thing))
-}
-
-function getJavaType(object, target) {
-    object.value = Java.type(target)
-    printSystemChatWindow(object.value === undefined)
-}
-
-
-printSystemChatWindow(this.PBotGobAPI === undefined)
-if (this.PBotGobAPI === undefined) {
-    this.PBotGobAPI = {value: 0}
-    printSystemChatWindow(this.PBotGobAPI === undefined)
-    //PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI")
-    getJavaType(this.PBotGobAPI, "haven.purus.pbot.PBotGobAPI")
-
-    printSystemChatWindow(this.PBotGobAPI.value === undefined)
-}
-printSystemChatWindow(this.PBotGobAPI.value === undefined)
-
-const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI")
-const Coord = Java.type("haven.Coord")
+// JavaType
+load("LMT/script.js")
+load("LMT/Foundation/Frame.js")
+JavaType.getPBotUtils()
 
 
 
 
 
-// load module
-// load("LMT/UI/View.js")
-// load("../Study/02_checkUndefine.js")    // load function execute all global expression in that file
-
-
-
-
-
-// class
-/*
-class Size2 {
-    constructor(width, height) {
-        this.width = init(width)
-        this.height = init(height)
-    }
-}
-*/
-
-
-
-
-
-// function
-function printSystemChatWindow(thing) {
-    PBotUtils.sysMsg(String(thing))
-}
-
-
-
-
-
-// variable
-const cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
-
-
-
-
-
-// main execution
-/*
-printSystemChatWindow(cuttingLine)
-printSystemChatWindow(this.PBotUtils === undefined)
-printSystemChatWindow(PBotUtils === undefined)
-printSystemChatWindow(typeof this)
-
-myName = "Lieman"
-printSystemChatWindow(this.myName)
-printSystemChatWindow(myName)
-myName = "Liewoman"
-printSystemChatWindow(this.myName)
-printSystemChatWindow(myName)
-*/
-
-
-
-// var mySize = new Size(10, 10)

@@ -1,3 +1,17 @@
+//********************************************
+// const title = "Size"
+// designed by Lieman
+//
+// description:
+//  describe here...
+//********************************************
+if (this.Size === undefined) {
+
+
+
+
+
+// class definition
 class Size {
     constructor(width, height) {    // constructor(width = 0, height = 0) {
         this.width = Number(width) ? Number(width) : 0    //  if height is undefined then Number(undefined) return 0
@@ -5,7 +19,8 @@ class Size {
     }
 }
 
-// function init(thing) { return thing != null ? thing : 0 }
-function init(thing) { return thing === undefined ? 0 : thing }
 
-// load("../testCode.js")
+
+
+
+}

@@ -1,21 +1,28 @@
 //********************************************
-// title = "script"
+// const title = "BasicLayout"
 // designed by Lieman
 //
 // description:
 //  describe here...
 //********************************************
+if (this.BasicLayout === undefined)
 
 
 
 
 
 // load java script files
-load("JavaType.js")    // this path is relative
 
 
 
 
 
-// variable
-this.cuttingLine = "ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ"
+// class definition
+class BasicLayout {
+}
+
+
+
+
+
+}
