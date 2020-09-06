@@ -9,6 +9,12 @@ void					.msgToChat(string chatName, string msg) // send message to a given chat
 
 
 
+<<PBotLabel>>
+void					.setColor(int r, int g, int b)
+void					.setText(java.lang.String text)
+
+
+
 <<PBotCheckbox>>
 boolean					.getValue()
 void					.setValue(boolean val)
@@ -135,12 +141,12 @@ void					.wdgmsg(haven.Widged sender, string msg, Object... args)
 
 <<PBotWindowAPI>>
 void					.closeWindow(haven.Window window)
-int					.getAmount(haven.Window window) // get amount at a meter of the window, from 0 to 100, i.e. trough
-PBotInventory				.getInventory(haven.Window window)
-int					.getStockpileTotalCapacity()
-int					.getStockpileUsedCapacity()
-haven.Window				.getWindow(string name)
-void					.putItemFromHandToStockpile()
+int					    .getAmount(haven.Window window) // get amount at a meter of the window, from 0 to 100, i.e. trough
+PBotInventory			.getInventory(haven.Window window)
+int					    .getStockpileTotalCapacity()
+int					    .getStockpileUsedCapacity()
+haven.Window			.getWindow(string name)
+void				    .putItemFromHandToStockpile()
 	// 행동을 기다리는지
 void					.putItemFromInventoryToStockpile(int count) // like when scrolling to stockpile
 void					.takeItemsFromStockpile(int count)

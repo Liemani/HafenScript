@@ -1,5 +1,5 @@
 //********************************************
-const title = "ALMTATest"
+this.title = "AALMTTest"
 // designed by Lieman
 //
 // short description:
@@ -8,18 +8,20 @@ const title = "ALMTATest"
 //  to do
 // - check posibility of mutual referencing
 // - how to prevent load overlapping
+// - function describing some string which has argument for to input in the string
 //********************************************
 
 
 
 
 
-// JavaType
-load("LMT/script.js")
-load("LMT/Foundation/Frame.js")
-JavaType.getPBotUtils()
+// JavaType, load()
+load("LMT/Model/LMTJavaType.js")
+LMTJavaType.getPBotUtils()
+
+load(`${title}/Model/Application.js`)
 
 
-
-
+// main execution
+Application.run()
 
