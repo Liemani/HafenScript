@@ -558,3 +558,5 @@ function sleepUntilPutTargetItems(amountOfTargetItemExpectToBeInPlayerInventory)
 }
 
 PBotGob은 class가 아니라 structure이다
+
+how to pick up multiple same item: https://discord.com/channels/538114096722346005/554320270513668096/755488293684117516
