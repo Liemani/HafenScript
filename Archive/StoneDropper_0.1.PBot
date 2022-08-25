@@ -1,0 +1,49 @@
+// made by Lieman
+const ui = Java.type('haven.purus.pbot.PBotAPI').ui();
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils");
+const PBotCharacterAPI = Java.type("haven.purus.pbot.PBotCharacterAPI");
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI");
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI");
+const window = PBotUtils.PBotWindow(ui, "Dropper", 50, 110, ScriptID);
+const startBtn = window.addButton("startBtnCb", "Start", 100, 5, 5);
+
+startBtn.changeColor(255, 200, 255);
+
+const startBtnCb = () => {
+	startBtn.destroy();
+
+	PBotUtils.sysMsg(ui, "돌을 캘 타일을 선택해 주세요");
+	PBotUtils.selectArea(ui);
+    let stoneTile = PBotUtils.getSelectedAreaA();
+
+    PBotUtils.pfLeftClick(ui, stoneTile.x, stoneTile.y);
+    PBotCharacterAPI.doAct(ui, "dig");
+    PBotUtils.mapClick(ui, stoneTile.x, stoneTile.y, 1, 0);
+    PBotCharacterAPI.cancelAct(ui);
+
+	while (true) {
+        if (window.closed())
+            break;
+
+        while (PBotUtils.getItemAtHand(ui) == null) {
+            if (window.closed())
+                break;
+            PBotUtils.sleep(1000);
+        }
+
+        if (window.closed())
+            break;
+
+        PBotUtils.dropItemFromHand(ui, 0);
+
+        if (window.closed())
+            break;
+
+        while (PBotUtils.getItemAtHand(ui) != null) {
+            if (window.closed())
+                break;
+            PBotUtils.sleep(500);
+        }
+	}
+	PBotUtils.sysMsg(ui, "매크로를 종료해요");
+};

@@ -1,0 +1,75 @@
+// A clay differ bot, digs ball-clay from the seleceted area and puts it in the clay stockpiles in the selected area
+// Made by Purus Cor to demonstrate usage of PBot API
+// For more information about API, join Purus Pasta discord
+// To suggest features into API, suggest them in discord
+const ui = Java.type('haven.purus.pbot.PBotAPI').ui();
+const PBotUtils = Java.type("haven.purus.pbot.PBotUtils");
+const PBotCharacterAPI = Java.type("haven.purus.pbot.PBotCharacterAPI");
+const PBotGobAPI = Java.type("haven.purus.pbot.PBotGobAPI");
+const PBotWindowAPI = Java.type("haven.purus.pbot.PBotWindowAPI");
+const window = PBotUtils.PBotWindow(ui, "Slage Digger", 50, 110, ScriptID);
+const startBtn = window.addButton("startBtnCb", "Start", 100, 5, 5);
+
+startBtn.changeColor(255, 200, 255);
+
+const startBtnCb = () => {
+	startBtn.destroy();
+
+	PBotUtils.sysMsg(ui, "돌을 캘 타일을 선택해 주세요");
+	PBotUtils.selectArea(ui);
+    let clayTile = PBotUtils.getSelectedAreaA();
+
+	PBotUtils.sysMsg(ui, "스톡파일들이 있는 영역을 드래그 해 주세요");
+	PBotUtils.selectArea(ui);
+	let stockpiles = [];
+	const gobs = PBotUtils.gobsInArea(ui, PBotUtils.getSelectedAreaA(), PBotUtils.getSelectedAreaB());
+	for(let i=0; i<gobs.size(); i++) {
+		if(gobs[i].getResname() === 'gfx/terobjs/stockpile-stone')
+			stockpiles.push(gobs[i]);
+	}
+
+	let stop = false;
+	while(!stop) {
+		// Dig until inventory full or out of claytiles
+		if(clayTile.length === 0) {
+			PBotUtils.sysMsg(ui, "돌을 캘 타일이 없어요");
+			stop = true;
+			break;
+		}
+
+        PBotUtils.pfLeftClick(ui, clayTile.x, clayTile.y);
+        PBotCharacterAPI.doAct(ui, "dig");
+        PBotUtils.mapClick(ui, clayTile.x, clayTile.y, 1, 0);
+        PBotCharacterAPI.cancelAct(ui);
+
+        while (PBotUtils.getItemAtHand(ui) == null)
+            PBotUtils.sleep(1000);
+        PBotUtils.mapClick(ui, clayTile.x, clayTile.y, 1, 0);
+        PBotUtils.sleep(1000);
+        PBotUtils.dropItemFromHand(ui, 0);
+        while (PBotUtils.getItemAtHand(ui) != null)
+            PBotUtils.sleep(500);
+
+		let stoneInInventorySize = PBotUtils.playerInventory(ui).getInventoryItemsByResnames(".*gneiss").size();
+		while(stoneInInventorySize > 0) {
+			if(stockpiles.length == 0) {
+				stop = true;
+				PBotUtils.sysMsg(ui, "모든 돌 스톡 파일을 다 채웠어요");
+				break;
+			}
+			PBotUtils.pfRightClick(ui, stockpiles[0], 0);
+			PBotWindowAPI.waitForWindow(ui, "Stockpile");
+			const slots = PBotWindowAPI.getStockpileTotalCapacity(ui);
+			const used = PBotWindowAPI.getStockpileUsedCapacity(ui);
+			const count = Math.min(stoneInInventorySize, slots-used);
+			PBotWindowAPI.putItemFromInventoryToStockpile(ui, count);
+			if(count + used === slots)
+				stockpiles.shift();
+			stoneInInventorySize -= count;
+			while(PBotUtils.playerInventory(ui).getInventoryItemsByResnames(".*gneiss").size() != stoneInInventorySize) {
+				PBotUtils.sleep(500);
+			}
+		}
+	}
+	PBotUtils.sysMsg(ui, "매크로를 종료해요");
+};
